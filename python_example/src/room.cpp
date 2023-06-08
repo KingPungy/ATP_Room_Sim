@@ -15,7 +15,7 @@ float Room::getTemperature() {
     
     // Ensure temperature stays within a valid range
     temperature = std::clamp(temperature, -40.0f, 80.0f); // based on datasheet of sensor DHT 22 (-40 - +80)
-    return temperature;
+    return temperature + this->sensor_accuracy_offset;
     
 }
  

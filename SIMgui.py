@@ -1,6 +1,10 @@
+# used in the decorator syntax
+from functools import wraps
+import logging
+import time
+import sys
 
 from collections import deque # for deque of temperature values
-
 # for plotting in qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure  # for plotting in qt
@@ -13,9 +17,7 @@ from PyQt5 import uic  # for loading ui files
 import reactivex as rx
 # from reactivex import scheduler
 from reactivex import operators as ops
-
 from room_simulator import Room # New room class and temperature generator
-
 
 class SIMgui(QMainWindow):
     """A class representing the gui for the simulation and the logic for the simulation
@@ -171,8 +173,8 @@ class SIMgui(QMainWindow):
         self.updateObserver()
         # set the initial values and labels of the plots
         self.updatePlots(0, 0)
-        self.purgeGraphData()
-
+        self.purgeGraphData() 
+    
     def setTargetTemperature(self, target_temperature: float) -> None:
         """Sets the `target_temperature`
 
@@ -181,7 +183,7 @@ class SIMgui(QMainWindow):
         """
         self.target_temperature = target_temperature
         print(f"Target Temperature set to: {str(self.target_temperature)}")
-
+    
     def generateCommands(self, temp: float) -> list[bool]:
         """Executes commands based on the temperature and outside temperature
 
@@ -212,7 +214,7 @@ class SIMgui(QMainWindow):
         # elif heater_state or cooler_state:
         #     OutStates = [False, False]
         return [heater_state, cooler_state]
-
+    
     def executeCommands(self, heaterCommand: bool, coolerCommand: bool) -> None:
         """Executes the commands for the heater and cooler
 
@@ -225,8 +227,8 @@ class SIMgui(QMainWindow):
         """
         self.room.activateHeater(heaterCommand)
         self.room.activateCooler(coolerCommand)
-        self.HeaterStateBox.setChecked(self.room.isHeaterActive())
-        self.CoolerStateBox.setChecked(self.room.isCoolerActive())
+        self.HeaterStateBox.setChecked(heaterCommand)
+        self.CoolerStateBox.setChecked(coolerCommand)
 
     def updatePlots(self, temp: float | int, humid: float | int) -> None:
         """Updates the plots with the new temperature and humidity values
@@ -333,3 +335,5 @@ class SIMgui(QMainWindow):
         """
         self.temperatureValues.clear()
         self.humidityValues.clear()
+
+

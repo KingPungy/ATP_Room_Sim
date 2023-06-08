@@ -1,5 +1,7 @@
 
-
+from functools import wraps
+import time
+import inspect
 from PyQt5 import QtCore #, QtWidgets  # for gui widgets
 from PyQt5.QtWidgets import QApplication #, QMainWindow, QWidget  # for gui window and app
 
@@ -10,6 +12,40 @@ import reactivex as rx
 from room_simulator import Room # New room class and temperature generator
 import room_simulator as rs
 from SIMgui import SIMgui
+
+    
+@staticmethod
+def verbose_output_logger_decorator(verbose_enabled, log_output):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if verbose_enabled:
+                print(f"Executing function: {func.__name__}")
+
+            result = func(*args, **kwargs)
+            if log_output and result is not None:
+                print(f"Output of function {func.__name__}: {result}")
+
+            return result
+        return wrapper
+    return decorator
+
+@staticmethod
+def log_time_enabled_decorator(log_time_enabled):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if log_time_enabled:
+                start_time = time.time()
+                result = func(*args, **kwargs)
+                end_time = time.time()
+                execution_time = end_time - start_time
+                print(f"Function {func.__name__} executed in {execution_time} seconds")
+                return result
+            else:
+                return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def main() -> None:
@@ -35,6 +71,30 @@ def main() -> None:
 
 if __name__ == '__main__':
     # main pyqt gui setup
+    
+
+    # Check if the verbose and log_time flags are provided as command-line arguments
+    verbose_enabled = "--verbose" in sys.argv
+    log_time_enabled = "--log-time" in sys.argv
+    output_logging_enabled = "--log-output" in sys.argv
+    print(f"Verbose mode: {verbose_enabled}")
+    print(f"Log time mode: {log_time_enabled}")
+    print(f"Output logging mode: {output_logging_enabled}")
+
+    # Apply the decorators based on the command-line arguments
+    if verbose_enabled | log_time_enabled | output_logging_enabled:
+        print("Applying decorators")
+        # Wrap functions within the SIMgui class
+        for name, func in inspect.getmembers(SIMgui, inspect.isfunction):
+            setattr(SIMgui, name, verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(func)))
+
+        # Create wrapper functions and apply decorators for the Room class functions
+        for attr_name, attr_value in inspect.getmembers(rs.Room):
+            if callable(attr_value) and not inspect.isclass(attr_value) and attr_name != "__getattribute__":
+                wrapper_func = verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(attr_value))
+                setattr(rs.Room, attr_name, wrapper_func)
+
+    
     main()
 
     pass

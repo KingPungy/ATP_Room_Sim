@@ -9,7 +9,7 @@ class Room {
 private:
     float temperature;
     float humidity;
-    float sensor_accuracy_offset;
+    double sensor_accuracy_offset;
     bool heater_active;
     bool cooler_active;
     float heater_power;
@@ -38,22 +38,37 @@ public:
         this->heater_power = 1000.0;
         this->cooler_power = 2000.0;
         // assign random value between -0.5 and 0.5 to sensor offset
-        this->sensor_accuracy_offset = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5; // seed is 1 automatically
+        this->sensor_accuracy_offset = static_cast <double> (rand()) / static_cast <double> (RAND_MAX) - 0.5; // seed is 1 automatically
     }
     
     float getTemperature();
     void setTemperature(float temperature) { this->temperature = temperature; }
     float getHumidity() { return humidity; }
-    void setHumidity(float humidity) { this->humidity = humidity; }
+    void setHumidity(float humidity) {
+        if (humidity < 0.0 || humidity > 100.0) {
+            throw std::invalid_argument("Invalid humidity value. Expected a value between 0 and 100.");
+        }
+        this->humidity = humidity;
+    }
     bool isHeaterActive() { return heater_active; }
     void activateHeater(bool isActive) { this->heater_active = isActive; }
     bool isCoolerActive() { return cooler_active; }
     void activateCooler(bool isActive) { this->cooler_active = isActive; }
     float getHeaterPower() { return heater_power; }
-    void setHeaterPower(float power) { this->heater_power = power; }
+    void setHeaterPower(float power) {
+        if (power < 0.0f) {
+            throw std::invalid_argument("Invalid heater power value. Expected a non-negative value.");
+        }
+        this->heater_power = power;
+    }
     float getCoolerPower() { return cooler_power; }
-    void setCoolerPower(float power) { this->cooler_power = power; }
-    float getOutsideTemperature() { return outside_temperature; }
+    void setCoolerPower(float power) {
+        if (power < 0.0f) {
+            throw std::invalid_argument("Invalid cooler power value. Expected a non-negative value.");
+        }
+        this->cooler_power = power;
+    }
+    float getOutsideTemperature() { return outside_temperature + this->sensor_accuracy_offset; }
     void setOutsideTemperature(float temperature) { this->outside_temperature = temperature; }
     
     float calculateTempDelta(float delta_time);

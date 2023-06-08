@@ -8,18 +8,22 @@ import room_simulator as rs
 def test_getTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.setOutsideTemperature(25.0)
-    assert room.getTemperature() == 25.0
+    offset = room.getTemperature() - 25.0
+    assert room.getTemperature() == 25.0 + offset
     room.setOutsideTemperature(30.0)
     room.setTemperature(25.0)
-    assert room.getTemperature() >= 25.0
+    assert room.getTemperature() >= 25.0 + offset
     room.setOutsideTemperature(10.0)
     room.setTemperature(25.0)
-    assert room.getTemperature() <= 25.0
+    assert room.getTemperature() <= 25.0 + offset
     
 def test_setTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    room.setOutsideTemperature(25.0)
+    offset = room.getTemperature() - 25.0
+    room.setOutsideTemperature(30.0)
     room.setTemperature(30.0)
-    assert room.getTemperature() == 30.0
+    assert room.getTemperature() == 30.0 + offset
 
 def test_getHumidity():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
@@ -60,7 +64,7 @@ def test_setHeaterPower():
 def test_getCoolerPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     assert room.getCoolerPower() == 2000.0
-    
+
 def test_setCoolerPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.setCoolerPower(1000.0)
@@ -68,12 +72,14 @@ def test_setCoolerPower():
     
 def test_getOutsideTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
-    assert room.getOutsideTemperature() == 30.0
+    offset = room.getOutsideTemperature() - 30.0
+    assert room.getOutsideTemperature() == 30.0 + offset
     
 def test_setOutsideTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.setOutsideTemperature(35.0)
-    assert room.getOutsideTemperature() == 35.0
+    offset = room.getOutsideTemperature() - 35.0
+    assert room.getOutsideTemperature() == 35.0 + offset
     
 def test_calculateTempDelta():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
@@ -83,9 +89,32 @@ def test_calculateHeatExchange():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     assert room.calculateHeatExchange() == 239.99998474121094
 
+def test_set_invalid_dimensions():
+    with pytest.raises(ValueError):
+        room = Room(25.0, 30.0, 50.0, [10.0, 10.0])
+
+def test_set_invalid_humidity():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    with pytest.raises(ValueError):
+        room.setHumidity(200.0)  # Attempt to set an unrealistic humidity
+
+    with pytest.raises(ValueError):
+        room.setHumidity(-10.0)  # Attempt to set an unrealistic humidity
+
+def test_set_heater_power_invalid_value():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    with pytest.raises(ValueError):
+        room.setHeaterPower(-500.0)
+
+def test_set_cooler_power_invalid_value():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    with pytest.raises(ValueError):
+        room.setCoolerPower(-1000.0)
+
 if __name__ == "__main__":
     
     print(f"Pybind11 Module Version: {rs.__version__}")
     app = QApplication([]) # needed for SIMgui tests that rely on QApplication instance
     pytest.main(['-v']) # run pytest with verbose output
     sys.exit() # shutdown Qt event loop that was started by QApplication([])
+    

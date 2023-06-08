@@ -1,8 +1,10 @@
+# Deprecated: This file is no longer used. It has been replaced by the C++ version in the pybind11 module.
+
 import time
 import numpy as np
 import reactivex as rx
 
-# TODO: implemetn in C++ for performance and use pybind11 to interface with python
+# TODO: implement in C++ for performance and use pybind11 to interface with python
 
 class Room:
     """ A class representing a room with a temperature and humidity sensor and a heater and cooler
