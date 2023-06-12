@@ -59,8 +59,8 @@ Optional command line arguments:
 2. Run one of the `test_*.py` files.
    The rest will be done automatically.
 
-Total number of tests: 36  
-Latest results: `36 passed, 0 skipped, 0 failed in 9.20 seconds`
+Total number of tests: 40  
+Latest results: `40 passed, 0 skipped, 0 failed in 9.71 seconds`
 
 ---
 

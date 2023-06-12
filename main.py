@@ -68,7 +68,7 @@ def main() -> None:
     app = QApplication(sys.argv)
 
     # pybind11 C++ module room_simulator class
-    SIMroom = Room(temperature=20.0, outside_temperature=30,
+    SIMroom = Room(temperature=25.0, outside_temperature=30,
                    humidity=20.0, room_dimensions=[10, 10, 2])
     # make higher order function to pass in the room object
 
@@ -78,7 +78,7 @@ def main() -> None:
     window.show()
 
     sys.exit(app.exec_())
-    # window()
+    
 
 
 if __name__ == '__main__':
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                 wrapper_func = verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(attr_value))
                 setattr(rs.Room, attr_name, wrapper_func)
 
-    
+    # setup and 
     main()
 
     pass

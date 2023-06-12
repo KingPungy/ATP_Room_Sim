@@ -14,9 +14,14 @@ float Room::getTemperature() {
     temperature += this->calculateTempDelta(delta_time);
     
     // Ensure temperature stays within a valid range
-    temperature = std::clamp(temperature, -40.0f, 80.0f); // based on datasheet of sensor DHT 22 (-40 - +80)
-    return temperature + this->sensor_accuracy_offset;
+    auto ret_temperature = std::clamp(temperature, -40.0f, 80.0f); // return value based on datasheet of sensor DHT 22 (-40 - +80)
+    return ret_temperature + this->sensor_accuracy_offset;
     
+}
+
+float Room::getOutsideTemperature() {
+    auto ret_outside_temperature = std::clamp(outside_temperature, -40.0f, 80.0f); // return value based on datasheet of sensor DHT 22 (-40 - +80)
+    return ret_outside_temperature + this->sensor_accuracy_offset;
 }
  
 float Room::calculateTempDelta(float delta_time) { 

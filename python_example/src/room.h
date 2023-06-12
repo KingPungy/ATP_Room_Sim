@@ -68,7 +68,7 @@ public:
         }
         this->cooler_power = power;
     }
-    float getOutsideTemperature() { return outside_temperature + this->sensor_accuracy_offset; }
+    float getOutsideTemperature();
     void setOutsideTemperature(float temperature) { this->outside_temperature = temperature; }
     
     float calculateTempDelta(float delta_time);

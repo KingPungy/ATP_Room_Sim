@@ -1,4 +1,4 @@
-# Deprecated: This file is no longer used. It has been replaced by the C++ version in the pybind11 module.
+# NOTE: Deprecated: This file is no longer used. It has been replaced by the C++ version in the pybind11 module.
 
 import time
 import numpy as np
@@ -178,7 +178,3 @@ class Room:
         
         # print(f"heat_exchange: {heat_exchange}")
         return -heat_exchange # in watts
-
-
-        
-    

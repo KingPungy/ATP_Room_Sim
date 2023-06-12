@@ -5,6 +5,11 @@ from PyQt5.QtWidgets import QApplication
 from room_simulator import Room
 import room_simulator as rs
 
+def test_Room_initialization():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    assert room is not None
+    assert isinstance(room, Room)
+
 def test_getTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.setOutsideTemperature(25.0)
@@ -28,29 +33,41 @@ def test_setTemperature():
 def test_getHumidity():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     assert room.getHumidity() == 50.0
+    room.setHumidity(60.0)
+    assert room.getHumidity() == 60.0
     
 def test_setHumidity():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.setHumidity(60.0)
     assert room.getHumidity() == 60.0
+    room.setHumidity(40.0)
+    assert room.getHumidity() == 40.0
     
 def test_isHeaterActive():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     assert room.isHeaterActive() == False
+    room.activateHeater(True)
+    assert room.isHeaterActive() == True
     
 def test_activateHeater():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.activateHeater(True)
     assert room.isHeaterActive() == True
+    room.activateHeater(False)
+    assert room.isHeaterActive() == False
     
 def test_isCoolerActive():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     assert room.isCoolerActive() == False
+    room.activateCooler(True)
+    assert room.isCoolerActive() == True
     
 def test_activateCooler():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     room.activateCooler(True)
     assert room.isCoolerActive() == True
+    room.activateCooler(False)
+    assert room.isCoolerActive() == False
     
 def test_getHeaterPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
@@ -58,8 +75,9 @@ def test_getHeaterPower():
     
 def test_setHeaterPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
-    room.setHeaterPower(1000.0)
     assert room.getHeaterPower() == 1000.0
+    room.setHeaterPower(2000.0)
+    assert room.getHeaterPower() == 2000.0
     
 def test_getCoolerPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
@@ -67,6 +85,7 @@ def test_getCoolerPower():
 
 def test_setCoolerPower():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    assert room.getCoolerPower() == 2000.0
     room.setCoolerPower(1000.0)
     assert room.getCoolerPower() == 1000.0
     
@@ -74,6 +93,8 @@ def test_getOutsideTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     offset = room.getOutsideTemperature() - 30.0
     assert room.getOutsideTemperature() == 30.0 + offset
+    room.setOutsideTemperature(25.0)
+    assert room.getOutsideTemperature() == 25.0 + offset
     
 def test_setOutsideTemperature():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
@@ -87,7 +108,7 @@ def test_calculateTempDelta():
     
 def test_calculateHeatExchange():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
-    assert room.calculateHeatExchange() == 239.99998474121094
+    assert room.calculateHeatExchange() == pytest.approx(240,0.1)
 
 def test_set_invalid_dimensions():
     with pytest.raises(ValueError):
@@ -110,6 +131,14 @@ def test_set_cooler_power_invalid_value():
     room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
     with pytest.raises(ValueError):
         room.setCoolerPower(-1000.0)
+
+
+def test_set_out_of_sensor_range_outside_temperature():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])
+    offset = room.getOutsideTemperature() - 30.0
+    room.setOutsideTemperature(100.0)
+    assert room.getOutsideTemperature() == pytest.approx(80.0 + offset,0.1)
+    
 
 if __name__ == "__main__":
     

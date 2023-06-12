@@ -107,7 +107,7 @@ class SIMgui(QMainWindow):
         uic.loadUi("gui.ui", self)
         self.setWindowTitle("Simulation Gui")
 
-        # if no room is passed in, create a new one
+        # if no room is passed in, create a new ones
         if SIMroom is None:
             self.room = Room()
         else:
@@ -120,7 +120,9 @@ class SIMgui(QMainWindow):
         
         # set the default poll rate in the gui {Float}
         self.SensorPollRateBox.setValue(self.pollRate)
+        # set the default target temperature in the gui {Int}
         self.TargetTempSelectBox.setValue(int(self.target_temperature))
+        self.RoomTempSelectBox.setValue(int(self.room.getTemperature()))
         # set the default threshold in the gui {Float}
         self.TargetThreshSelectBox.setValue(self.threshold)
         self.OutTempSelectBox.setValue(int(self.room.getOutsideTemperature()))
@@ -203,9 +205,9 @@ class SIMgui(QMainWindow):
 
         """
         if nPollRate <= 0:
-            self.pollRate = 1.0
-            self.SensorPollRateBox.setValue(1.0)
-            print("Poll Rate must be greater than 0, setting to 1, try again")
+            self.SensorPollRateBox.setValue(self.pollRate)
+            Exception("Poll Rate must be greater than 0, setting to 1, try again")
+            print("Poll Rate must be greater than 0, setting to 1, try again") # for user
         else:
             self.pollRate = nPollRate
             self.purgeGraphData()
@@ -221,8 +223,13 @@ class SIMgui(QMainWindow):
         Returns:
             None: The function does not return any value.
         """
-        self.threshold = threshold
-        print(f"Threshold set to: {str(self.threshold)}")
+        if threshold <= 0:
+            self.TargetThreshSelectBox.setValue(self.threshold)
+            Exception("Threshold must be greater than 0, setting to 1, try again")
+            print("Threshold must be greater than 0, setting to 1, try again") # for user
+        else:
+            self.threshold = threshold
+            print(f"Threshold set to: {str(self.threshold)}")
        
     def generateCommands(self, temp: float) -> list[bool]:
         """Generates commands based on the temperature and outside temperature
