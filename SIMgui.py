@@ -77,13 +77,17 @@ class SIMgui(QMainWindow):
 
     Methods
     -------
-    `set_target_temperature(target_temperature)` : None
+    `setTargetTemperature(target_temperature)` : None
         Sets the `target_temperature`
+    `setThreshold(threshold)` : None
+        Sets the `threshold`
+    'generateCommands(temp)` : None
+        Generates commands based on the temperature and outside temperature
     `ExecuteCommands(temp)` : None
         Executes commands based on the temperature and outside temperature
-    `update_plots(temp,humid)` : None
+    `updatePlots(temp,humid)` : None
         Updates the plots with the new temperature and humidity values
-    `UpdateObserver()` : None
+    `updateObserver()` : None
         Updates the observer with the current poll rate
     `setPollRate(nPollRate)` : None
         Sets the poll rate of the observer and updates the observer
@@ -93,6 +97,7 @@ class SIMgui(QMainWindow):
     """
 
     def __del__(self):
+        
         print("Disposed of Observer and subscribers")
         self.observablePoll.dispose()
         self.temperature_subject.dispose()
@@ -108,9 +113,11 @@ class SIMgui(QMainWindow):
         else:
             self.room = SIMroom
 
-        self.pollRate = 1.0  # default poll rate
-        self.target_temperature = 20
-        self.threshold = 0.5  # threshold for temperature change
+        # Default values for the gui
+        self.pollRate = 1.0             # default poll rate
+        self.target_temperature = 20    # default target temperature
+        self.threshold = 0.5            # threshold for temperature 
+        
         # set the default poll rate in the gui {Float}
         self.SensorPollRateBox.setValue(self.pollRate)
         self.TargetTempSelectBox.setValue(int(self.target_temperature))
@@ -140,7 +147,7 @@ class SIMgui(QMainWindow):
         self.humid_ax = self.HumidCanvas.figure.subplots()
         self.humid_ax.set_xlim(0, self.humidityValues.maxlen)
 
-        # self.pushButton.clicked.connect(self.button_clicked)
+        # set up the buttons and spin boxes for the gui
         self.PollRateConfirm.clicked.connect(lambda: self.setPollRate(self.SensorPollRateBox.value()))
         self.TargetThreshConfirm.clicked.connect(lambda: self.setThreshold(self.TargetThreshSelectBox.value()))
         self.TargetTempConfirm.clicked.connect(lambda: self.setTargetTemperature(self.TargetTempSelectBox.value()))
@@ -150,11 +157,10 @@ class SIMgui(QMainWindow):
         self.HeaterWattConfirm.clicked.connect(lambda: self.room.setHeaterPower(self.HeaterWattSelectBox.value()))
         self.CoolerBTUConfirm.clicked.connect(lambda: self.room.setCoolerPower(self.CoolerBTUSelectBox.value()))
 
+        # set the state of the heater and cooler checkboxes
         self.HeaterStateBox.setChecked(self.room.isHeaterActive())
-        # self.HeaterStateBox.setCheckable(False)
         self.CoolerStateBox.setChecked(self.room.isCoolerActive())
-        # self.CoolerStateBox.setCheckable(False)
-        # print(self.room)
+
 
         # generate commands based on the measured temperature and execute them
         self.temperature_subject.pipe(
@@ -179,13 +185,47 @@ class SIMgui(QMainWindow):
         """Sets the `target_temperature`
 
         Arguments: target_temperature {float} -- The target temperature
+        
+        Returns: None
 
         """
         self.target_temperature = target_temperature
         print(f"Target Temperature set to: {str(self.target_temperature)}")
     
+    def setPollRate(self, nPollRate: float) -> None:
+        """ Sets the poll rate of the observer and updates the observer
+
+        calls `self.UpdateObserver()` and `self.purgeGraphData()` to update the observer and purge the graph data to start fresh with the new poll rate
+
+        Arguments: `nPollRate` {float} -- The new poll rate
+
+        Returns: None
+
+        """
+        if nPollRate <= 0:
+            self.pollRate = 1.0
+            self.SensorPollRateBox.setValue(1.0)
+            print("Poll Rate must be greater than 0, setting to 1, try again")
+        else:
+            self.pollRate = nPollRate
+            self.purgeGraphData()
+            self.updateObserver()
+            print(f"Poll Rate set to: {str(self.pollRate)}/s")
+
+    def setThreshold(self, threshold: float) -> None:
+        """Set the threshold for the given instance. 
+        
+        Args:
+            threshold (float): The new threshold to be set for the instance.
+        
+        Returns:
+            None: The function does not return any value.
+        """
+        self.threshold = threshold
+        print(f"Threshold set to: {str(self.threshold)}")
+       
     def generateCommands(self, temp: float) -> list[bool]:
-        """Executes commands based on the temperature and outside temperature
+        """Generates commands based on the temperature and outside temperature
 
         Arguments: temp {float} -- The current temperature of the room
 
@@ -227,6 +267,7 @@ class SIMgui(QMainWindow):
         """
         self.room.activateHeater(heaterCommand)
         self.room.activateCooler(coolerCommand)
+        # sets the state of the checkboxes in the GUI
         self.HeaterStateBox.setChecked(heaterCommand)
         self.CoolerStateBox.setChecked(coolerCommand)
 
@@ -301,31 +342,7 @@ class SIMgui(QMainWindow):
             ops.map(lambda temperature: self.temperature_subject.on_next(self.room.getTemperature()))
         ).subscribe()
         print("Observer Created/Updated")
-
-    def setPollRate(self, nPollRate: float) -> None:
-        """ Sets the poll rate of the observer and updates the observer
-
-        calls `self.UpdateObserver()` and `self.purgeGraphData()` to update the observer and purge the graph data to start fresh with the new poll rate
-
-        Arguments: `nPollRate` {float} -- The new poll rate
-
-        Returns: None
-
-        """
-        if nPollRate <= 0:
-            self.pollRate = 1.0
-            self.SensorPollRateBox.setValue(1.0)
-            print("Poll Rate must be greater than 0, setting to 1, try again")
-        else:
-            self.pollRate = nPollRate
-            self.purgeGraphData()
-            self.updateObserver()
-            print(f"Poll Rate set to: {str(self.pollRate)}/s")
-
-    def setThreshold(self, threshold: float) -> None:
-        self.threshold = threshold
-        print(f"Threshold set to: {str(self.threshold)}")
-
+  
     def purgeGraphData(self) -> None:
         """Purges the graph data by clearing the deque 
 

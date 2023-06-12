@@ -16,6 +16,13 @@ from SIMgui import SIMgui
     
 @staticmethod
 def verbose_output_logger_decorator(verbose_enabled, log_output):
+    """Decorator for logging verbose output and result of a function
+    Args:
+        verbose_enabled (bool): Boolean value to enable/disable verbose output
+        log_output (bool): Boolean value to enable/disable logging of output
+    Returns:
+        wrapper (function): Wrapper function with the decorator applied
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -32,6 +39,12 @@ def verbose_output_logger_decorator(verbose_enabled, log_output):
 
 @staticmethod
 def log_time_enabled_decorator(log_time_enabled):
+    """Decorator for logging the execution time of a function
+    Args:
+        log_time_enabled (bool): Boolean value to enable/disable logging of execution time
+    Returns:
+        wrapper (function): Wrapper function with the decorator applied
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -47,9 +60,8 @@ def log_time_enabled_decorator(log_time_enabled):
         return wrapper
     return decorator
 
-
 def main() -> None:
-
+    # main pyqt gui setup
     print("Starting program")
     print(f"=====================\nLibrary Versions:\nPython Verion:    {sys.version}\nPyQt5 Verion:     {QtCore.PYQT_VERSION_STR}\nReactivex Verion: {rx.__version__}\nRoom_Simulator Version: {rs.__version__}\n=====================")
 
@@ -70,10 +82,8 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    # main pyqt gui setup
     
-
-    # Check if the verbose and log_time flags are provided as command-line arguments
+    # Check if the verbose, log-output and log-time flags are provided as command-line arguments
     verbose_enabled = "--verbose" in sys.argv
     log_time_enabled = "--log-time" in sys.argv
     output_logging_enabled = "--log-output" in sys.argv
