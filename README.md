@@ -1,90 +1,89 @@
-# ATP Room temperature control simulation
-This project is a simulation of a room temperature control system.   
-The room is simulated in a C++ Pybind11 module and the control system is simulated in python.   
-It uses a PyQt5 GUI to display the temperature and actuator.
+# ATP Room Temperature Control Simulation
 
-Simulated sensors and actuators:
-- Temperature/Humidity sensor DHT22
-- Generic Heater and Cooler actuators
-    - The actuators are simulated by a simple on/off switch
-    - The actuators can be set to a specifiec Wattage and BTU
+This project is a simulation of a room temperature control system. The room is simulated using a C++ Pybind11 module, while the control system is simulated in Python. A PyQt5 GUI is used to display the temperature and actuator information.
 
-UI Features:
+## Simulated Sensors and Actuators
+- Temperature/Humidity Sensor: DHT22
+- Generic Heater and Cooler Actuators
+    - The actuators are simulated using a simple on/off switch
+    - The actuators can be set to a specific Wattage and BTU
+
+## UI Features
 - PyQt5 GUI designed in Qt Designer
 - Displays the current temperature and humidity
 - Displays the current state of the actuators
-- Allows user to set:
+- Allows the user to set:
     - Target temperature
-    - Target Threshold
+    - Target threshold
     - Outside temperature
     - Inside temperature
     - Sensor polling rate
 
-
 Example of the PyQt5 UI:  
-![UI](Img\ExampleUI.png)
-
+![UI](Img/ExampleUI.png)
 
 ---
-## How to build? / Setup
-Pybind11 Module build command and folder: 
-```python
-..\ATP_Room_Sim\
-```
 
-Command to install C++ Room Simulator pybind11 module:   
-Run the following command in the ATP_Room_Sim folder
-```powershell
-pip install .\python_example\
-```
-Install requirements for the python code:
-```
+## How to Build and Setup
+
+### Pybind11 Module
+1. Navigate to the `ATP_Room_Sim` folder.
+2. Build the Pybind11 module using the following command:
+    ```bash
+    pip install .\python_example\
+    ```
+
+### Python Code Requirements
+Install the required Python packages by running the following command:
+```bash
 pip install -r requirements.txt
 ```
 
----	
+---
 
-## How to run
-```python
-python main.py {--verbose} {--log-output} {--log-time}
+## How to Run
+Use the following command to run the simulation:
+```bash
+python main.py [--verbose] [--log-output] [--log-time]
 ```
 
 Optional command line arguments:
- - `--verbose` - prints out all executed functions
- - `--log-output` - prints the results of all functions with a return value
- - `--log-time` - prints the excution time of all functions
----
-## How to test
-
-Run one of the test_*.py files inside the `ATP_Room_Sim\pytest` folder.  
-The rest will be done automatically
-
-Total amount of tests: 36   
-Latest results: ``36 passed, 0 skipped, 0 failed in 9.20 seconds``
+- `--verbose`: Prints out all executed functions.
+- `--log-output`: Prints the results of all functions with a return value.
+- `--log-time`: Prints the execution time of all functions.
 
 ---
-## NOTE for alterations
-Things that have to be the same for the pybind module
 
-python_example\setup.py file:
+## How to Test
+1. Navigate to the `ATP_Room_Sim/pytest` folder.
+2. Run one of the `test_*.py` files.
+   The rest will be done automatically.
 
-```python
-ext_modules = [
-    Pybind11Extension("{Module Name}",
-    )
-]
-...
+Total number of tests: 36  
+Latest results: `36 passed, 0 skipped, 0 failed in 9.20 seconds`
 
-setup(
-    name= "{Module Name}"
-)
-```
+---
 
-python_example\src\main.cpp
-```py
-PYBIND11_MODULE({Module Name}, m) 
-...
-```
+## Note for Alterations
+If you make any changes to the Pybind module, ensure the following files also reflect the changes:
+- `python_example/setup.py`:
+  ```python
+  ext_modules = [
+      Pybind11Extension("{Module Name}",
+      )
+  ]
+  ...
+  
+  setup(
+      name="{Module Name}"
+  )
+  ```
 
-possible files that also require the same name
- - `docs/conf.py`
+- `python_example/src/main.cpp`:
+  ```cpp
+  PYBIND11_MODULE({Module Name}, m)
+  ...
+  ```
+
+- Possible files that may require the same name:
+  - `docs/conf.py`
