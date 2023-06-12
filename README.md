@@ -1,13 +1,39 @@
+# ATP Room temperature control simulation
+This project is a simulation of a room temperature control system.   
+The room is simulated in a C++ Pybind11 module and the control system is simulated in python.   
+It uses a PyQt5 GUI to display the temperature and actuator.
+
+Simulated sensors and actuators:
+- Temperature/Humidity sensor DHT22
+- Generic Heater and Cooler actuators
+    - The actuators are simulated by a simple on/off switch
+    - The actuators can be set to a specifiec Wattage and BTU
+
+UI Features:
+- PyQt5 GUI designed in Qt Designer
+- Displays the current temperature and humidity
+- Displays the current state of the actuators
+- Allows user to set:
+    - Target temperature
+    - Target Threshold
+    - Outside temperature
+    - Inside temperature
+    - Sensor polling rate
+
+
+Example of the PyQt5 UI:  
+![UI](Img\ExampleUI.png)
 
 
 ---
-## How to build?
+## How to build? / Setup
 Pybind11 Module build command and folder: 
 ```python
 ..\ATP_Room_Sim\
 ```
 
-Command to install pybind11 module: 
+Command to install C++ Room Simulator pybind11 module:   
+Run the following command in the ATP_Room_Sim folder
 ```powershell
 pip install .\python_example\
 ```
