@@ -1,7 +1,7 @@
 import pytest
 import sys
 import time
-sys.path.insert(0,"..\\ATP_CppRoomSim_PyGUI") # Add the directory containing the module.py file to the Python path
+sys.path.insert(0,"..\\ATP_CppRoomSim_PyGUI") # Add the directory containing the SIMgui.py file to the Python path
 from PyQt5.QtWidgets import QApplication
 from SIMgui import SIMgui
 
@@ -137,6 +137,7 @@ def test_purge_graph_data(gui):
     assert len(gui.temperatureValues) == 0
     assert len(gui.humidityValues) == 0
 
+
 def test_update_observer(gui):
     assert gui.observablePoll is not None
 
@@ -208,8 +209,6 @@ def test_simulation_gui_system_test(gui):
 
 
 if __name__ == "__main__":
-
-    # print(f"Pybind11 Module Version: {rs.__version__}")
     gui = QApplication([]) # needed for SIMgui tests that rely on QApplication instance
     pytest.main(['-v']) # run pytest with verbose output
     sys.exit() # shutdown Qt event loop that was started by QApplication([])
