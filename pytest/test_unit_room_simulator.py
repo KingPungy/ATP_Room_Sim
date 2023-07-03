@@ -1,6 +1,6 @@
 import pytest
 import sys
-sys.path.insert(0,"..\\ATP_CppRoomSim_PyGUI") # Add the directory containing the module.py file to the Python path
+sys.path.insert(0,"..\\ATP_Room_Sim") # Add the directory containing the module.py file to the Python path
 from PyQt5.QtWidgets import QApplication
 from room_simulator import Room
 import room_simulator as rs

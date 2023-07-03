@@ -2,7 +2,7 @@ import pytest
 import sys
 import math
 from PyQt5.QtWidgets import QApplication
-sys.path.insert(0,"..\\ATP_CppRoomSim_PyGUI") # Add the directory containing the module.py file to the Python path
+sys.path.insert(0,"..\\ATP_Room_Sim") # Add the directory containing the module.py file to the Python path
 from SIMgui import SIMgui
 from room_simulator import Room
 

@@ -1,7 +1,7 @@
 import pytest
 import sys
 import time
-sys.path.insert(0,"..\\ATP_CppRoomSim_PyGUI") # Add the directory containing the SIMgui.py file to the Python path
+sys.path.insert(0,"..\\ATP_Room_Sim") # Add the directory containing the SIMgui.py file to the Python path
 from PyQt5.QtWidgets import QApplication
 from SIMgui import SIMgui
 
