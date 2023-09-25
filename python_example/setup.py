@@ -17,7 +17,7 @@ __version__ = "1.0.1"
 ext_modules = [
     Pybind11Extension("room_simulator",
         sorted(glob("src/*.cpp")),
-        #sorted(["src/main.cpp","src/room.cpp"]),
+        # sorted(["src/main.cpp","src/room.cpp","src/mockArduino.cpp"]),
         # Example: passing in the version to the compiled code
         define_macros = [('VERSION_INFO', __version__)],
         ),

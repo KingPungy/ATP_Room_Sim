@@ -1,4 +1,4 @@
-functools
 PyQt5
 reactivex
 matplotlib
+.\python_example\

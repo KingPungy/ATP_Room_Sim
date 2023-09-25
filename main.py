@@ -1,4 +1,4 @@
-
+# python --version: 3.10.9
 from functools import wraps
 import time
 import inspect
@@ -71,6 +71,17 @@ def main() -> None:
     SIMroom = Room(temperature=25.0, outside_temperature=30,
                    humidity=20.0, room_dimensions=[10, 10, 2])
     # make higher order function to pass in the room object
+
+    TODO:
+        # Instantiate MockArduino class with connected sensors and actuators
+        # instantiate the room object and pass it to the MockArduino class
+            # MockArduino(com_port='COM3', Room_sim_class_variables, temperature_sensor_pins=['d:7:i','d:6:i'], light_sensor_pin='A:0:i', heater_pin='d:31:o', cooler_pin='d:31:o', Sunscreen_pin='d:31:o')
+            
+        # pass the mockArduino class to the mockFrirmata class to simulate a connection to the arduino
+
+
+
+
 
     
     window = SIMgui(SIMroom=SIMroom, graphLength=100)

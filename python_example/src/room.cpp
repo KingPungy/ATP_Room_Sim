@@ -1,4 +1,8 @@
 // room.cpp
+#ifndef ROOM_H
+#define ROOM_H
+
+#pragma once
 #include "room.h"
 #include <algorithm>
 #include <iostream>
@@ -10,7 +14,7 @@ float Room::getTemperature() {
     double delta_time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_update_time).count() / 1000000.0;
     last_update_time = current_time;
  
-
+    // Only simulate Inside temperature
     temperature += this->calculateTempDelta(delta_time);
     
     // Ensure temperature stays within a valid range
@@ -21,6 +25,7 @@ float Room::getTemperature() {
 
 float Room::getOutsideTemperature() {
     auto ret_outside_temperature = std::clamp(outside_temperature, -40.0f, 80.0f); // return value based on datasheet of sensor DHT 22 (-40 - +80)
+    // No simulation of outside temperature, just a set value
     return ret_outside_temperature + this->sensor_accuracy_offset;
 }
  
@@ -49,4 +54,6 @@ float Room::calculateHeatExchange() {
     // print(f"heat_exchange: {heat_exchange}")
     return -heat_exchange; // in watts
 }
-        
+
+
+#endif // ROOM_H
