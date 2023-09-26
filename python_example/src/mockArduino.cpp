@@ -2,9 +2,10 @@
 #ifndef MOCKARDUINO_H
 #define MOCKARDUINO_H
 
-#pragma once
+// #pragma once
 
 #include "mockArduino.h"
+#include <variant> // std::variant<>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -13,6 +14,10 @@ namespace py = pybind11;
 
 // initalize all mockArduino functions
 
+// Function: mockArduino constructor
+// Arguments: com_Port (int) - the com port of the arduino
+//            room (Room*) - the room object
+// Return Type: mockArduino class object
 mockArduino::mockArduino(int com_Port, Room* room) {
     this->com_Port = com_Port;
     this->room = room;
@@ -24,10 +29,15 @@ mockArduino::~mockArduino() {
 }
 
 
+// Function: set_pin_mode
+// Arguments: pin_type (int) - the type of pin (digital or analog)
+//            pin_num (int) - the number of the pin
+//            pin_mode (int) - the mode of the pin
+// Return Type: void
 void mockArduino::set_pin_mode(int pin_type, int pin_num , int pin_mode) {
     // check if pin is digital or analog
-    if (pin_type == 0){
-        if (pin_num >= 0 && pin_num <= 53){ // digital
+    if (pin_type == 0) {
+        if (pin_num >= 0 && pin_num <= 53) { // digital
             if ( pin_mode >= 0 && pin_mode <= 5) {
                 // set the value of the pin
                 this->digitalPins[pin_num].first = pin_mode;
@@ -37,13 +47,12 @@ void mockArduino::set_pin_mode(int pin_type, int pin_num , int pin_mode) {
         } else {
             throw std::invalid_argument("Invalid pin number. Expected a value between 0 and 53.");
         }
-    } else if (pin_type == 1 ){
-        if ( 0 <= pin_num && pin_num <= 16) { // analog
+    } else if (pin_type == 1) {
+        if (0 <= pin_num && pin_num <= 16) { // analog
             // check if pin is input or output
             if ( pin_mode == 0 || pin_mode == 6) {
                 this->analogPins[pin_num] = pin_mode;
-            }
-            else {
+            } else {
                 throw std::invalid_argument("Invalid pin mode. Expected one of the following 0 or 6.");
             }
         } else {
@@ -57,13 +66,35 @@ void mockArduino::set_pin_mode(int pin_type, int pin_num , int pin_mode) {
     
 }
 
+
+// Function: set_digital_pin
+// Arguments: pin_num (int) - the number of the pin
+//            state (bool) - the state of the pin (HIGH or LOW)
+// summary: sets the state of the pin. if the pin is a relay, it will set the state of the relay using the room object
+// Return Type: void
 void mockArduino::set_digital_pin(int pin_num, bool state){ // digital only
     // check if pin is digital or analog
     if (pin_num >= 0 && pin_num <= 53){
         // check for pin mode error
         if (this->digitalPins[pin_num].first == 0 || (3 <= this->digitalPins[pin_num].first && this->digitalPins[pin_num].first <=5)){
             // set pin state
-            this->digitalPins[pin_num].second = state;
+            switch (this->digitalPins[pin_num].first) {
+                case EMPTY: // 0
+                    this->digitalPins[pin_num].second = state; 
+                    break;
+                case RELAY_HEATER: // 3
+                    this->write_Relay_Heater(state);
+                    break;
+                case RELAY_COOLER: // 4
+                    this->write_Relay_Cooler(state);
+                    break;
+                case RELAY_SUNSCREEN: // 5
+                    this->write_Relay_Sunscreen(state);
+                    break;            
+                default: // should never happen
+                    throw std::invalid_argument("Invalid pin mode. Expected a value of between 0, 3, 4, 5.");
+                    break;
+            }
         }
         else {
             throw std::invalid_argument("Invalid pin mode. Expected a value of between 0, 3, 4, 5.");
@@ -75,7 +106,12 @@ void mockArduino::set_digital_pin(int pin_num, bool state){ // digital only
     }
 }
 
-std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_num, int pin_mode) {
+
+// Function: get_pin_data
+// Arguments: pin_type (int) - the type of pin (digital or analog)
+//            pin_num (int) - the number of the pin
+// Return Type: std::variant<bool, double, int> - depending on the pin type and mode
+std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_num) {
 
     // check if pin is digital or analog
     if (pin_type == 0 && (pin_num >= 0 && pin_num <= 53) ){
@@ -83,64 +119,71 @@ std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_
         if (this->digitalPins[pin_num].first >= 0 && this->digitalPins[pin_num].first <= 5){
             // return the value of the pin
             switch (this->digitalPins[pin_num].first) {
-                case 0:
+                case EMPTY: // 0
                     return this->digitalPins[pin_num].second;
                     break;
-                case 1:
+                case DHT22_1: // 1
                     return this->read_DHT22_1();
                     break;
-                case 2:
+                case DHT22_2: // 2
                     return this->read_DHT22_2();
                     break;
-                case 3:
+                case RELAY_HEATER: // 3
                     return this->read_Relay_Heater();
                     break;
-                case 4:
+                case RELAY_COOLER: // 4
                     return this->read_Relay_Cooler();
                     break;
-                case 5:
+                case RELAY_SUNSCREEN: // 5
                     return this->read_Relay_Sunscreen();
                     break;
-                default:
+                default: // should never happen
                     throw std::invalid_argument("Invalid pin mode. Expected one of the following values 0, 1, 2, 3, 4, 5.");
                     break;
             }
-        }
-        else {
+        } else {
             throw std::invalid_argument("Invalid pin mode. Expected one of the following values 0, 1, 2, 3, 4, 5.");
         }
     } else if (pin_type == 1 && ( pin_num >= 0 && pin_num <= 16)) {
         // check if pin is input or output
-        if ( pin_mode == 0 || pin_mode == 6) {
-            if (this->analogPins[pin_num] == 6){
-                return this->read_LDR();
-            }
-            else {
-                throw std::invalid_argument("Invalid pin mode. Expected one of the following  0 or 6.");
-            }
+        if (this->analogPins[pin_num] == 6){
+            return this->read_LDR();
+        } else {
+           throw std::invalid_argument("Invalid pin mode of given pin. Expected 6 for LDR.");
         }
-        else {
-            throw std::invalid_argument("Invalid pin mode. Expected one of the following  0 or 6.");
-        }
-    }
-    else {
+    } else {
         // return error
-        throw std::invalid_argument("Invalid pin number and pin type. Expected a value between 0 and 53 for digital pins and 0 and 16 for analog pins.");
-        
+        throw std::invalid_argument("Invalid pin number and pin type. Expected a value between 0 and 53 for digital pins and 0 and 16 for analog pins."); 
     }
-
 }
 
-
+// Function: read_DHT22_1
+// Arguments: None
+// Return Type: double - the temperature of the room
 double mockArduino::read_DHT22_1() {
     return this->room->getTemperature();
 }
 
+// Function: read_DHT22_2
+// Arguments: None
+// Return Type: double - the temperature outside the room
 double mockArduino::read_DHT22_2() {
     return this->room->getOutsideTemperature();
 }
 
-int mockArduino::read_LDR() { // mocks the LDR sensor GL5528 returning a value between 0 and 1024
+// Function: calculateLDRResistance
+// Arguments: lux (double) - the light level in the room between 0 and 1024 
+//            R10lx (double) - Light resistance at 10 lux in ohms 
+//            gamma (double) - Gamma value found in the datasheet
+// Return Type: double - the resistance of the LDR in ohms
+double calculateLDRResistance(double lux, double R10lx, double gamma) {
+    return pow(10, gamma) * R10lx / pow(lux, gamma);
+}
+
+// Function: read_LDR
+// Arguments: None
+// Return Type: int - the light level in the room between 0 and 1024
+int mockArduino::read_LDR() {
     // Get lux value from the sensor (replace this with your actual sensor reading)
     double lux = this->room->getLightLevelLux();
 
@@ -151,7 +194,7 @@ int mockArduino::read_LDR() { // mocks the LDR sensor GL5528 returning a value b
     const double VCC = 5.0;     // Supply voltage in volts
 
     // Calculate LDR resistance LDR_R using gamma formula
-    double LDR_R = pow(10, gamma) * R10lx / pow(lux, gamma);
+    double LDR_R = calculateLDRResistance(lux, R10lx, gamma);
 
     // Calculate voltage across photo-resistor
     double voltage = (VCC * R1) / (LDR_R + R1);
@@ -162,27 +205,44 @@ int mockArduino::read_LDR() { // mocks the LDR sensor GL5528 returning a value b
     return mappedValue;
 }
 
-
+// Function: write_Relay_Heater
+// Arguments: state (bool) - the state of the heater
+// Return Type: void
 void mockArduino::write_Relay_Heater( bool state) {
     this->room->activateHeater(state);
 }
 
+// Function: read_Relay_Heater
+// Arguments: None
+// Return Type: bool - the state of the heater
 bool mockArduino::read_Relay_Heater() {
     return this->room->isHeaterActive();
 }
 
+// Function: write_Relay_Cooler
+// Arguments: state (bool) - the state of the cooler
+// Return Type: void
 void mockArduino::write_Relay_Cooler( bool state) {
     this->room->activateCooler(state);
 }
 
+// Function: read_Relay_Cooler
+// Arguments: None
+// Return Type: bool - the state of the cooler
 bool mockArduino::read_Relay_Cooler() {
     return this->room->isCoolerActive();
 }
 
+// Function: write_Relay_Sunscreen
+// Arguments: state (bool) - the state of the sunscreen
+// Return Type: void
 void mockArduino::write_Relay_Sunscreen( bool state) {
     this->room->activateSunscreen(state);
 }
 
+// Function: read_Relay_Sunscreen
+// Arguments: None
+// Return Type: bool - the state of the sunscreen
 bool mockArduino::read_Relay_Sunscreen() {
     return this->room->isSunscreenActive();
 }

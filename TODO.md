@@ -19,7 +19,8 @@
     - ToLux("value", "Resistor", Constant?)
     - GenerateSunscreenCommand("lux", "luxThreshold")
 
-
+functionele test maken
+door lijsts met input, output pairs mee te geven en te asserten
 
 
 #### Vragen:

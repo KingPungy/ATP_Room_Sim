@@ -1,7 +1,7 @@
 
 #pragma once
 #include "room.h"
-#include <iostream>
+// #include <iostream>
 
 #include <vector> // std::vector<>
 #include <utility> // std::pair<>
@@ -58,7 +58,8 @@ public:
     void set_digital_pin(int pin_num, bool state);
 
     void set_pin_mode(int pin_type, int pin_num, int pin_mode);
-    std::variant<bool, double, int> get_pin_data(int pin_type, int pin_num, int pin_mode); // check if pin is digital or analog an the mode of the pin, input or output
+    
+    std::variant<bool, double, int> get_pin_data(int pin_type, int pin_num); // check if pin is digital or analog an the mode of the pin, input or output
     
 };
 

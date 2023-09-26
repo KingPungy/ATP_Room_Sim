@@ -10,8 +10,8 @@ import reactivex as rx
 
 # from room import Room  # Old room.py class and temperature generator
 from room_simulator import Room # New room class and temperature generator
-import room_simulator as rs
-from SIMgui import SIMgui
+import room_simulator as rs # includes mockArduino and Room classes
+from SIMgui import SIMgui # gui class with controller
 
     
 @staticmethod

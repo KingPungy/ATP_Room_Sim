@@ -165,17 +165,18 @@ class SIMgui(QMainWindow):
 
 
         # generate commands based on the measured temperature and execute them
+        # add inside temp, outside temp and light level as pipe inputs to the subject stream
         self.temperature_subject.pipe(
             # OPTIONAL in current version without real Hardware: convert raw sensor data to celcius
             # # ops.map(lambda RawTempData: self.ConvertRawTempDataToCelcius(RawTempData)), 
             # Functie wordt meegegeven als argument om de commands te genereren op basis van de temperatuur
-            ops.map(lambda temp: self.generateCommands(temp)), 
+            ops.map(lambda temp: self.generateCommands(temp[0], self.room.isHeaterActive(), self.room.isCoolerActive(), temp[1], self.target_temperature, self.threshold)),
             ops.map(lambda commands: self.executeCommands(heaterCommand=commands[0], coolerCommand=commands[1]))
             ).subscribe() 
         
         # update the plots when the temperature is updated
         # Temperature is simulated, humidity is not so it stays at 50%
-        self.temperature_subject.subscribe(on_next=lambda temp: self.updatePlots(temp, self.room.getHumidity()))  
+        self.temperature_subject.subscribe(on_next=lambda temp: self.updatePlots(temp[0], self.room.getHumidity()))  
 
         # create an observable that emits every 1/poll_rate seconds and updates the temperature_subject with the current temperature of the room
         self.updateObserver()
@@ -231,36 +232,71 @@ class SIMgui(QMainWindow):
             self.threshold = threshold
             print(f"Threshold set to: {str(self.threshold)}")
        
-    def generateCommands(self, temp: float) -> list[bool]:
+    # def generateCommands(self, temp: float) -> list[bool]:
+    #     """Generates commands based on the temperature and outside temperature
+
+    #     Arguments: temp {float} -- The current temperature of the room
+
+    #     Returns: tuple -- Commands for the heater and cooler
+    #     """
+        
+    #     heater_state = self.room.isHeaterActive()
+    #     cooler_state = self.room.isCoolerActive()
+    #     outside_temp = self.room.getOutsideTemperature()
+
+    #     OutStates = [False, False]
+        
+    #     if temp < self.target_temperature - self.threshold and outside_temp < temp:
+    #         OutStates = [True, False]
+    #         return OutStates
+    #     elif temp > self.target_temperature + self.threshold and outside_temp > temp:
+    #         OutStates = [False, True]
+    #         return OutStates
+    #     elif temp >= self.target_temperature - (self.threshold / 2) and heater_state:
+    #         OutStates[0] = False
+    #         return OutStates
+    #     elif temp <= self.target_temperature + (self.threshold / 2) and cooler_state:
+    #         OutStates[1] = False
+    #         return OutStates
+    #     # elif heater_state or cooler_state:
+    #     #     OutStates = [False, False]
+    #     return [heater_state, cooler_state]
+    
+
+    def generateCommands(self,temp: float, heater_state: bool, cooler_state: bool, outside_temp: float, target_temperature: float, threshold: float) -> list[bool]:
         """Generates commands based on the temperature and outside temperature
 
-        Arguments: temp {float} -- The current temperature of the room
+        Arguments: 
+            temp {float} -- The current temperature of the room
+            heater_state {bool} -- The state of the heater
+            cooler_state {bool} -- The state of the cooler
+            outside_temp {float} -- The outside temperature
+            target_temperature {float} -- The desired temperature
+            threshold {float} -- The acceptable temperature range
 
         Returns: tuple -- Commands for the heater and cooler
-
         """
         
-        heater_state = self.room.isHeaterActive()
-        cooler_state = self.room.isCoolerActive()
-        outside_temp = self.room.getOutsideTemperature()
-
         OutStates = [False, False]
         
-        if temp < self.target_temperature - self.threshold and outside_temp < temp:
+        if temp < target_temperature - threshold and outside_temp < temp:
             OutStates = [True, False]
             return OutStates
-        elif temp > self.target_temperature + self.threshold and outside_temp > temp:
+        elif temp > target_temperature + threshold and outside_temp > temp:
             OutStates = [False, True]
             return OutStates
-        elif temp >= self.target_temperature - (self.threshold / 2) and heater_state:
+        elif temp >= target_temperature - (threshold / 2) and heater_state:
             OutStates[0] = False
             return OutStates
-        elif temp <= self.target_temperature + (self.threshold / 2) and cooler_state:
+        elif temp <= target_temperature + (threshold / 2) and cooler_state:
             OutStates[1] = False
             return OutStates
         # elif heater_state or cooler_state:
         #     OutStates = [False, False]
         return [heater_state, cooler_state]
+
+
+
     
     def executeCommands(self, heaterCommand: bool, coolerCommand: bool) -> None:
         """Executes the commands for the heater and cooler
@@ -346,7 +382,7 @@ class SIMgui(QMainWindow):
 
         self.observablePoll = rx.interval(1.0/self.pollRate).pipe(
             # ops.map(lambda i: next(self.room.get_temperature())), #only used with python generator from room.py
-            ops.map(lambda temperature: self.temperature_subject.on_next(self.room.getTemperature()))
+            ops.map(lambda temperature: self.temperature_subject.on_next([self.room.getTemperature(), self.room.getOutsideTemperature(), self.room.getLightLevelLux()]))
         ).subscribe()
         print("Observer Created/Updated")
   

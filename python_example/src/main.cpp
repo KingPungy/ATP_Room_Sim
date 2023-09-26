@@ -57,7 +57,7 @@ PYBIND11_MODULE(room_simulator, m) {
         .def("read_Relay_Sunscreen", &mockArduino::read_Relay_Sunscreen)
         .def("set_digital_pin", &mockArduino::set_digital_pin, py::arg("pin_num"), py::arg("state"))
         .def("set_pin_mode", &mockArduino::set_pin_mode, py::arg("pin_type"), py::arg("pin_num"), py::arg("pin_mode"))
-        .def("get_pin_data", &mockArduino::get_pin_data, py::arg("pin_type"), py::arg("pin_num"), py::arg("pin_mode"));
+        .def("get_pin_data", &mockArduino::get_pin_data, py::arg("pin_type"), py::arg("pin_num"));
     // #ifdef VERSION_INFO;
     m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
     // #else

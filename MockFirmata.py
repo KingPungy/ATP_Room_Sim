@@ -1,10 +1,10 @@
 # This file contains the class that mocks the Arduino Firmata library for testing purposes
-import pyfirmata
+# import pyfirmata
 import room_simulator as rs
-import time
+# import time
 
 # pin modes
-EMPTY = 0 # will produce error if data is requested
+EMPTY = 0 # will produce error if data is requested from analog pin with empty pinmode
 # digital only
 DHT22_1 = 1
 DHT22_2 = 2
@@ -38,8 +38,8 @@ class MockFirmata:
         self._analog_read_value = value
         self._room_simulator.analogWrite(pin, value)
         
-    def analogRead(self, pin):
-        return self._room_simulator.analogRead(pin)
+    def analogRead(self, pin) -> float:
+        return self.MockArduino.get_pin_data(1,pin)
 
 
 # Testing
@@ -58,16 +58,17 @@ mocky.set_pin_mode(0,7,DHT22_1) # pin D7 is DHT22_1
 mocky.set_pin_mode(1,0,LDR) # pin A0 is LDR
 
 
-print("temp: {0}".format(mocky.get_pin_data(0,7,DHT22_1)))
-print("light: {0}".format(mocky.get_pin_data(1,0,LDR))) # 10000 lux
+print("temp: {0}".format(mocky.get_pin_data(0,7)))
+print("light: {0}".format(mocky.get_pin_data(1,0))) # 10000 lux
 mocky.get_room().setLightLevelLux(1.55) # 1.55 lux
-print("light: {0}".format(mocky.get_pin_data(1,0,LDR)))
+print("light: {0}".format(mocky.get_pin_data(1,0)))
 
 roomba = mocky.get_room() # get the room object from the mockArduino class
 print(roomba) # print the room object - same ✔
 print(room) # print the room object   - same ✔
 
 print(roomba.getTemperature())
+
 
 
     
