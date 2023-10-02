@@ -7,6 +7,7 @@
 #include <utility> // std::pair<>
 #include <variant> // std::variant<>
 
+
 #define EMPTY 0
 // definitions for the sake of the mock
 // digital only
@@ -43,8 +44,8 @@ public:
     int get_com_Port() { return com_Port; }
     Room* get_room() { return room; }
 
-    double read_DHT22_1();
-    double read_DHT22_2();
+    std::vector<double> read_DHT22_1();
+    std::vector<double> read_DHT22_2();
     int read_LDR();
 
     void write_Relay_Heater(bool state);
@@ -59,7 +60,7 @@ public:
 
     void set_pin_mode(int pin_type, int pin_num, int pin_mode);
     
-    std::variant<bool, double, int> get_pin_data(int pin_type, int pin_num); // check if pin is digital or analog an the mode of the pin, input or output
+    std::variant<bool, double, std::vector<double>, int> get_pin_data(int pin_type, int pin_num); // check if pin is digital or analog an the mode of the pin, input or output 
     
 };
 

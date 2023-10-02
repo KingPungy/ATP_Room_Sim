@@ -81,10 +81,6 @@ def main() -> None:
         # pass the mockArduino class to the mockFrirmata class to simulate a connection to the arduino
 
 
-
-
-
-    
     window = SIMgui(SIMroom=SIMroom, graphLength=100)
        
     window.show()

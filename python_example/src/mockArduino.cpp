@@ -111,10 +111,10 @@ void mockArduino::set_digital_pin(int pin_num, bool state){ // digital only
 // Arguments: pin_type (int) - the type of pin (digital or analog)
 //            pin_num (int) - the number of the pin
 // Return Type: std::variant<bool, double, int> - depending on the pin type and mode
-std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_num) {
+std::variant<bool, double,std::vector<double>, int> mockArduino::get_pin_data(int pin_type, int pin_num) {
 
     // check if pin is digital or analog
-    if (pin_type == 0 && (pin_num >= 0 && pin_num <= 53) ){
+    if (pin_type == 0 && (pin_num >= 0 && pin_num <= 53) ){ // pin is digital
         // check for pin mode error
         if (this->digitalPins[pin_num].first >= 0 && this->digitalPins[pin_num].first <= 5){
             // return the value of the pin
@@ -144,7 +144,7 @@ std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_
         } else {
             throw std::invalid_argument("Invalid pin mode. Expected one of the following values 0, 1, 2, 3, 4, 5.");
         }
-    } else if (pin_type == 1 && ( pin_num >= 0 && pin_num <= 16)) {
+    } else if (pin_type == 1 && ( pin_num >= 0 && pin_num <= 16)) { // pin is analog
         // check if pin is input or output
         if (this->analogPins[pin_num] == 6){
             return this->read_LDR();
@@ -159,16 +159,18 @@ std::variant<bool, double, int> mockArduino::get_pin_data(int pin_type, int pin_
 
 // Function: read_DHT22_1
 // Arguments: None
-// Return Type: double - the temperature of the room
-double mockArduino::read_DHT22_1() {
-    return this->room->getTemperature();
+// Return Type: std::vector<double> - the temperature of the room and the humidity of the room	
+std::vector<double> mockArduino::read_DHT22_1() {
+    std::vector<double> roomTemp = {this->room->getTemperature(), this->room->getHumidity()};
+    return roomTemp;
 }
 
 // Function: read_DHT22_2
 // Arguments: None
-// Return Type: double - the temperature outside the room
-double mockArduino::read_DHT22_2() {
-    return this->room->getOutsideTemperature();
+// Return Type: std::vector<double> - the temperature outside the room and the humidity outside the room wich is the same as the room
+std::vector<double> mockArduino::read_DHT22_2() { 
+    std::vector<double> outsideTemp = {this->room->getOutsideTemperature(), this->room->getHumidity()};
+    return outsideTemp;
 }
 
 // Function: calculateLDRResistance
