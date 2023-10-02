@@ -78,7 +78,7 @@ def main() -> None:
             # MockArduino(com_port='COM3', Room_simulator_object)
             # setpin modes for the sensors and actuators
             
-        # pass the mockArduino class to the mockFrirmata class to simulate a connection to the arduino
+        # pass the mockFirmata class to the SIMgui class to simulate a connection to the arduino
 
 
     window = SIMgui(SIMroom=SIMroom, graphLength=100)

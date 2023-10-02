@@ -44,6 +44,17 @@ class MockFirmata:
         else:
             raise Exception("MockArduino not connected to port")
 
+    def getRoomObject(self) -> Room:
+        """
+        Returns the room object from the MockArduino class.
+        
+        Args:
+            self: an instance of the object
+
+        Returns:
+            The room object from the MockArduino class.
+        """
+        return self.MockArduino.get_room()
     # This function sets the pin mode for a given pin on the MockArduino object
     def setPinMode(self, pinDef:str) -> None:
         """Sets the pin mode for a given pin on the MockArduino object.
