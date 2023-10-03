@@ -110,6 +110,8 @@ if __name__ == '__main__':
     print(f"Log time mode: {log_time_enabled}")
     print(f"Output logging mode: {output_logging_enabled}")
 
+    # TODO: Add a decorator to the mockFirmata and MockArduino classes
+
     # Apply the decorators based on the command-line arguments
     if verbose_enabled | log_time_enabled | output_logging_enabled:
         print("Applying decorators")
