@@ -65,7 +65,7 @@ def log_time_enabled_decorator(log_time_enabled):
 def main() -> None:
     # main pyqt gui setup
     print("Starting program")
-    print(f"=====================\nLibrary Versions:\nPython Verion:    {sys.version}\nPyQt5 Verion:     {QtCore.PYQT_VERSION_STR}\nReactivex Verion: {rx.__version__}\nRoom_Simulator Version: {rs.__version__}\n=====================")
+    print(f"=====================\nLibrary Versions:\nPython Verion:\t\t{sys.version}\nPyQt5 Verion:\t\t{QtCore.PYQT_VERSION_STR}\nReactivex Verion:\t{rx.__version__}\nRoom_Simulator Version:\t{rs.__version__}\n=====================")
 
     app = QApplication(sys.argv)
 
