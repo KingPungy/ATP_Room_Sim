@@ -67,7 +67,14 @@
         "xtr1common": "cpp",
         "xutility": "cpp",
         "array": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "*.tcc": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "fstream": "cpp"
     },
     "python.testing.pytestArgs": [
         "pytest"

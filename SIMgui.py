@@ -4,6 +4,7 @@ import logging
 import time
 import sys
 
+from typing import Union
 from collections import deque # for deque of temperature values
 # for plotting in qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -13,11 +14,14 @@ from PyQt5 import QtCore, QtWidgets  # for gui widgets you might want to add
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget  # for gui window and app
 from PyQt5 import uic  # for loading ui files
 
-
 import reactivex as rx
 # from reactivex import scheduler
 from reactivex import operators as ops
 from room_simulator import Room # New room class and temperature generator
+from MockFirmata import MockFirmata # mock arduino class
+
+from constants import * # pin definitions
+
 
 class SIMgui(QMainWindow):
     """A class representing the gui for the simulation and the logic for the simulation
@@ -102,21 +106,26 @@ class SIMgui(QMainWindow):
         self.observablePoll.dispose()
         self.temperature_subject.dispose()
 
-    def __init__(self, SIMroom: Room = None, graphLength: int = 10):
+    def __init__(self, MockFirmata: MockFirmata = None, graphLength: int = 10):
         super(SIMgui, self).__init__()
         uic.loadUi("gui.ui", self)
         self.setWindowTitle("Simulation Gui")
 
         # if no room is passed in, create a new ones
-        if SIMroom is None:
-            self.room = Room()
-        else:
-            self.room = SIMroom
+        if MockFirmata is None:
+            raise Exception("MockFirmata object not passed in")
+        
+
+        self.room = MockFirmata.getRoomObject() # get the room object from the MockFirmata object to alter values in the simulation
+        self.firmata = MockFirmata # get the MockFirmata object to Read and Write to the MockArduino
+
 
         # Default values for the gui
         self.pollRate = 1.0             # default poll rate
         self.target_temperature = 20    # default target temperature
-        self.threshold = 0.5            # threshold for temperature 
+        self.temp_threshold = 0.5            # threshold for temperature 
+
+        self.lux_threshold = 10000     # threshold for light level  
         
         # set the default poll rate in the gui {Float}
         self.SensorPollRateBox.setValue(self.pollRate)
@@ -124,13 +133,13 @@ class SIMgui(QMainWindow):
         self.TargetTempSelectBox.setValue(int(self.target_temperature))
         self.RoomTempSelectBox.setValue(int(self.room.getTemperature()))
         # set the default threshold in the gui {Float}
-        self.TargetThreshSelectBox.setValue(self.threshold)
+        self.TargetThreshSelectBox.setValue(self.temp_threshold)
         self.OutTempSelectBox.setValue(int(self.room.getOutsideTemperature()))
         self.HeaterWattSelectBox.setValue(int(self.room.getHeaterPower()))
         self.CoolerBTUSelectBox.setValue(int(self.room.getCoolerPower()))
 
         # create a subject stream for the temperature
-        self.temperature_subject = rx.subject.Subject()
+        self.temperature_light_subject = rx.subject.Subject()
         self.observablePoll = None
 
         # graph length for deque of values
@@ -151,8 +160,10 @@ class SIMgui(QMainWindow):
 
         # set up the buttons and spin boxes for the gui
         self.PollRateConfirm.clicked.connect(lambda: self.setPollRate(self.SensorPollRateBox.value()))
-        self.TargetThreshConfirm.clicked.connect(lambda: self.setThreshold(self.TargetThreshSelectBox.value()))
+        self.TargetThreshConfirm.clicked.connect(lambda: self.setTempThreshold(self.TargetThreshSelectBox.value()))
         self.TargetTempConfirm.clicked.connect(lambda: self.setTargetTemperature(self.TargetTempSelectBox.value()))
+        # TODO: add lux slider and threshold
+
 
         self.RoomTempConfirm.clicked.connect(lambda: self.room.setTemperature(self.RoomTempSelectBox.value()))
         self.OutTempConfirm.clicked.connect(lambda: self.room.setOutsideTemperature(self.OutTempSelectBox.value()))
@@ -162,21 +173,26 @@ class SIMgui(QMainWindow):
         # set the state of the heater and cooler checkboxes
         self.HeaterStateBox.setChecked(self.room.isHeaterActive())
         self.CoolerStateBox.setChecked(self.room.isCoolerActive())
+        #self.SunscreenStateBox.setChecked(self.room.isSunscreenActive())
 
 
         # generate commands based on the measured temperature and execute them
         # add inside temp, outside temp and light level as pipe inputs to the subject stream
-        self.temperature_subject.pipe(
+        self.temperature_light_subject.pipe(
             # OPTIONAL in current version without real Hardware: convert raw sensor data to celcius
-            # # ops.map(lambda RawTempData: self.ConvertRawTempDataToCelcius(RawTempData)), 
+            # # ops.map(lambda RawData: self.ConvertRawDataToCelciusAndLux(RawData[0], RawData[1], RawData[2])), 
             # Functie wordt meegegeven als argument om de commands te genereren op basis van de temperatuur
-            ops.map(lambda temp: self.generateCommands(temp[0], self.room.isHeaterActive(), self.room.isCoolerActive(), temp[1], self.target_temperature, self.threshold)),
-            ops.map(lambda commands: self.executeCommands(heaterCommand=commands[0], coolerCommand=commands[1]))
+            # data object is als volgt opgebouwd: [[inside_temp, inside_humid], [outside_temp, outside_humid], light_level_lux]
+            ops.map(lambda data: self.generateCommands(data[0][0], 
+                                                       self.firmata.digitalRead(RELAY_HEATER), self.firmata.digitalRead(RELAY_COOLER), self.firmata.digitalRead(RELAY_SUNSCREEN), 
+                                                       data[1][0], self.target_temperature, self.temp_threshold, self.lux_threshold,
+                                                       data[2])),
+            ops.map(lambda commands: self.executeCommands(heaterCommand=commands[0], coolerCommand=commands[1], sunscreenCommand=commands[2]))
             ).subscribe() 
         
         # update the plots when the temperature is updated
         # Temperature is simulated, humidity is not so it stays at 50%
-        self.temperature_subject.subscribe(on_next=lambda temp: self.updatePlots(temp[0], self.room.getHumidity()))  
+        self.temperature_light_subject.subscribe(on_next=lambda data: self.updatePlots(data[0][0], self.room.getHumidity()))  
 
         # create an observable that emits every 1/poll_rate seconds and updates the temperature_subject with the current temperature of the room
         self.updateObserver()
@@ -184,6 +200,8 @@ class SIMgui(QMainWindow):
         self.updatePlots(0, 0)
         self.purgeGraphData() 
     
+
+
     def setTargetTemperature(self, target_temperature: float) -> None:
         """Sets the `target_temperature`
 
@@ -195,6 +213,53 @@ class SIMgui(QMainWindow):
         self.target_temperature = target_temperature
         print(f"Target Temperature set to: {str(self.target_temperature)}")
     
+    def setTempThreshold(self, threshold: float) -> None:
+        """Set the threshold for the given instance. 
+        
+        Args:
+            threshold (float): The new threshold to be set for the instance.
+        
+        Returns:
+            None: The function does not return any value.
+        """
+        if threshold <= 0:
+            self.TargetThreshSelectBox.setValue(self.temp_threshold)
+            Exception("Threshold must be greater than 0, setting to 1, try again")
+            print("Threshold must be greater than 0, setting to 1, try again") # for user
+        else:
+            self.temp_threshold = threshold
+            print(f"Threshold set to: {str(self.temp_threshold)}")
+          
+    def setLuxThreshold(self, lux_threshold: int) -> None:
+        """Sets the `lux_threshold`
+
+        Arguments: lux_threshold {int} -- The lux threshold
+        
+        Returns: None
+
+        """
+        self.lux_threshold = lux_threshold
+        print(f"Light Level Threshold set to: {str(self.lux_threshold)}")
+    
+    def calculateLuxFromADC(self,mapped_value:int) -> Union[float, int]:
+        # Constants for your LDR setup (should match the constants used in the Arduino code)
+        R10lx = 15000.0  # Light resistance at 10 lux in ohms
+        gamma = 0.6     # Gamma value
+        R1 = 5000.0     # Resistor R1 in ohms
+        VCC = 5.0       # Supply voltage in volts
+
+        # Calculate voltage from mapped value
+        voltage = (mapped_value / 1024.0) * VCC
+
+        # Calculate LDR resistance LDR_R using voltage and R1
+        LDR_R = R1 * (VCC - voltage) / voltage
+
+        # Calculate lux using gamma formula
+        lux = (10 ** gamma) * R10lx / (LDR_R ** gamma)
+        
+        return lux
+
+
     def setPollRate(self, nPollRate: float) -> None:
         """ Sets the poll rate of the observer and updates the observer
 
@@ -215,55 +280,8 @@ class SIMgui(QMainWindow):
             self.updateObserver()
             print(f"Poll Rate set to: {str(self.pollRate)}/s")
 
-    def setThreshold(self, threshold: float) -> None:
-        """Set the threshold for the given instance. 
-        
-        Args:
-            threshold (float): The new threshold to be set for the instance.
-        
-        Returns:
-            None: The function does not return any value.
-        """
-        if threshold <= 0:
-            self.TargetThreshSelectBox.setValue(self.threshold)
-            Exception("Threshold must be greater than 0, setting to 1, try again")
-            print("Threshold must be greater than 0, setting to 1, try again") # for user
-        else:
-            self.threshold = threshold
-            print(f"Threshold set to: {str(self.threshold)}")
-       
-    # def generateCommands(self, temp: float) -> list[bool]:
-    #     """Generates commands based on the temperature and outside temperature
 
-    #     Arguments: temp {float} -- The current temperature of the room
-
-    #     Returns: tuple -- Commands for the heater and cooler
-    #     """
-        
-    #     heater_state = self.room.isHeaterActive()
-    #     cooler_state = self.room.isCoolerActive()
-    #     outside_temp = self.room.getOutsideTemperature()
-
-    #     OutStates = [False, False]
-        
-    #     if temp < self.target_temperature - self.threshold and outside_temp < temp:
-    #         OutStates = [True, False]
-    #         return OutStates
-    #     elif temp > self.target_temperature + self.threshold and outside_temp > temp:
-    #         OutStates = [False, True]
-    #         return OutStates
-    #     elif temp >= self.target_temperature - (self.threshold / 2) and heater_state:
-    #         OutStates[0] = False
-    #         return OutStates
-    #     elif temp <= self.target_temperature + (self.threshold / 2) and cooler_state:
-    #         OutStates[1] = False
-    #         return OutStates
-    #     # elif heater_state or cooler_state:
-    #     #     OutStates = [False, False]
-    #     return [heater_state, cooler_state]
-    
-
-    def generateCommands(self,temp: float, heater_state: bool, cooler_state: bool, outside_temp: float, target_temperature: float, threshold: float) -> list[bool]:
+    def generateCommands(self,inside_temp: float, heater_state: bool, cooler_state: bool, sunscreen_state: bool, outside_temp: float, target_temperature: float, temp_threshold: float, lux_threshold:float, lux:float) -> list[bool]:
         """Generates commands based on the temperature and outside temperature
 
         Arguments: 
@@ -272,33 +290,41 @@ class SIMgui(QMainWindow):
             cooler_state {bool} -- The state of the cooler
             outside_temp {float} -- The outside temperature
             target_temperature {float} -- The desired temperature
-            threshold {float} -- The acceptable temperature range
+            temp_threshold {float} -- The acceptable temperature range
 
         Returns: tuple -- Commands for the heater and cooler
         """
+
+        # TODO: 
+        # add extra Bool of button for active cooling always allowed    
+
+        OutStates = [heater_state, cooler_state, sunscreen_state] # default state of the heater and cooler and sunscreen
+
+        if lux > lux_threshold:
+            OutStates[2] = True
+        else:
+            OutStates[2] = False
+
         
-        OutStates = [False, False]
-        
-        if temp < target_temperature - threshold and outside_temp < temp:
-            OutStates = [True, False]
-            return OutStates
-        elif temp > target_temperature + threshold and outside_temp > temp:
-            OutStates = [False, True]
-            return OutStates
-        elif temp >= target_temperature - (threshold / 2) and heater_state:
-            OutStates[0] = False
-            return OutStates
-        elif temp <= target_temperature + (threshold / 2) and cooler_state:
+        if inside_temp < target_temperature - temp_threshold and outside_temp < inside_temp:
+            OutStates[0] = True
             OutStates[1] = False
             return OutStates
-        # elif heater_state or cooler_state:
-        #     OutStates = [False, False]
-        return [heater_state, cooler_state]
+        elif inside_temp > target_temperature + temp_threshold and outside_temp > inside_temp:
+            OutStates[0] = False
+            OutStates[1] = True
+            return OutStates
+        elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state:
+            OutStates[0] = False
+            return OutStates
+        elif inside_temp <= target_temperature + (temp_threshold / 2) and cooler_state:
+            OutStates[1] = False
+            return OutStates
+        
 
+        return OutStates
 
-
-    
-    def executeCommands(self, heaterCommand: bool, coolerCommand: bool) -> None:
+    def executeCommands(self, heaterCommand: bool, coolerCommand: bool, sunscreenCommand: bool) -> None:
         """Executes the commands for the heater and cooler
 
         Arguments:
@@ -308,13 +334,19 @@ class SIMgui(QMainWindow):
         Returns: None
 
         """
-        self.room.activateHeater(heaterCommand)
-        self.room.activateCooler(coolerCommand)
+        
+
+        self.firmata.digitalWrite(RELAY_HEATER, heaterCommand)
+        self.firmata.digitalWrite(RELAY_COOLER, coolerCommand)
+        self.firmata.digitalWrite(RELAY_SUNSCREEN, sunscreenCommand)
+        
         # sets the state of the checkboxes in the GUI
         self.HeaterStateBox.setChecked(heaterCommand)
         self.CoolerStateBox.setChecked(coolerCommand)
+        #self.SunscreenStateBox.setChecked(sunscreenCommand)
 
-    def updatePlots(self, temp: float | int, humid: float | int) -> None:
+
+    def updatePlots(self, temp: Union[float, int], humid: Union[float, int]) -> None:
         """Updates the plots with the new temperature and humidity values
 
         Arguments:  temp {float} -- The current temperature of the room
@@ -364,6 +396,16 @@ class SIMgui(QMainWindow):
         self.HumidCanvas.draw()
         # plt.pause(0.001)
 
+    def purgeGraphData(self) -> None:
+        """Purges the graph data by clearing the deque 
+
+        Arguments: None
+
+        Returns: None
+        """
+        self.temperatureValues.clear()
+        self.humidityValues.clear()
+
     def updateObserver(self) -> None:
         """Updates the observer with the current poll rate
 
@@ -381,19 +423,24 @@ class SIMgui(QMainWindow):
             self.observablePoll.dispose() if self.observablePoll != None else None
 
         self.observablePoll = rx.interval(1.0/self.pollRate).pipe(
-            # ops.map(lambda i: next(self.room.get_temperature())), #only used with python generator from room.py
-            ops.map(lambda temperature: self.temperature_subject.on_next([self.room.getTemperature(), self.room.getOutsideTemperature(), self.room.getLightLevelLux()]))
+            ops.map(lambda Data : self.temperature_light_subject.on_next(
+                [self.firmata.digitalRead(DHT22_1), self.firmata.digitalRead(DHT22_2), self.calculateLuxFromADC(self.firmata.analogRead(LDR))]
+                ))
         ).subscribe()
         print("Observer Created/Updated")
   
-    def purgeGraphData(self) -> None:
-        """Purges the graph data by clearing the deque 
 
-        Arguments: None
 
-        Returns: None
-        """
-        self.temperatureValues.clear()
-        self.humidityValues.clear()
 
+# if False == True:
+    # print("Starting Simulation Gui Test")
+
+    # app = QApplication(sys.argv)
+
+    # sim = SIMgui(Room(),10)
+    # sim.show()
+    # print(sim.room.getLightLevelLux())
+    # print(sim.calculateLuxFromADC(977))
+
+    # app.exec_()
 

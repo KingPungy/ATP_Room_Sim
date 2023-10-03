@@ -2,6 +2,7 @@
 import room_simulator as rs
 from room_simulator import Room
 import time
+from typing import Union
 
 
 # pin modes
@@ -87,6 +88,7 @@ class MockFirmata:
                 pinMode = self.pinModes[pinDef[2]]
             
             # Set pin mode in MockArduino object
+            # print("pinType: {0}, pinNum: {1}, pinMode: {2}".format(pinType,pinNum,pinMode))
             self.MockArduino.set_pin_mode(pinType,pinNum,pinMode)
     
     def digitalWrite(self, pin:int, value:bool) -> None:
@@ -101,7 +103,7 @@ class MockFirmata:
         """
         self.MockArduino.set_digital_pin(pin, value)
             
-    def digitalRead(self, pin:int) -> [bool,[float,float]]:
+    def digitalRead(self, pin:int) -> [bool,[float,float]]: # TODo make tuple
         """
         Reads the digital value of a specified pin on an Arduino board.
         
@@ -134,7 +136,7 @@ room = rs.Room(temperature=25.0, outside_temperature=30,
                    humidity=20.0, room_dimensions=[10, 10, 2]) # breedte, lengte, hoogte
 
 
-if True:
+if False == True:
 
     mocky = MockFirmata(3, room)
     mocky.begin()
