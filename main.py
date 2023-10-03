@@ -71,16 +71,8 @@ def main() -> None:
 
     # pybind11 C++ module room_simulator class
     SIMroom = Room(temperature=25.0, outside_temperature=30,
-                   humidity=20.0, room_dimensions=[10, 10, 2])
-    
-
-    #TODO:
-        # Instantiate MockArduino class with connected sensors and actuators
-        # instantiate the room object and pass it to the MockArduino class
-            # MockArduino(com_port='COM3', Room_simulator_object)
-            # setpin modes for the sensors and actuators
-            
-        # pass the mockFirmata class to the SIMgui class to simulate a connection to the arduino
+                   humidity=20.0, room_dimensions=[10, 10, 2]) 
+                                # breedte, lengte, hoogte
 
     mockFirmata = MockFirmata(Port=3, Room=SIMroom)
     if mockFirmata.begin():
