@@ -194,6 +194,7 @@ int mockArduino::read_LDR() {
     const double gamma = 0.6;   // Gamma value
     const double R1 = 5000;     // Resistor R1 in ohms
     const double VCC = 5.0;     // Supply voltage in volts
+    const int ADC_RESOLUTION = 1024; // ADC resolution (10-bit)
 
     // Calculate LDR resistance LDR_R using gamma formula
     double LDR_R = calculateLDRResistance(lux, R10lx, gamma);
@@ -202,7 +203,10 @@ int mockArduino::read_LDR() {
     double voltage = (VCC * R1) / (LDR_R + R1);
 
     // Map voltage to the range [0, 1024] (assuming a 10-bit ADC)
-    int mappedValue = static_cast<int>((voltage / VCC) * 1024);
+    int mappedValue = static_cast<int>((voltage / VCC) * ADC_RESOLUTION);
+
+    // Ensure the mapped value is within the valid range [0, 1023]
+    mappedValue = std::min(std::max(mappedValue, 0), ADC_RESOLUTION - 1);
 
     return mappedValue;
 }

@@ -1,5 +1,7 @@
 # used in the decorator syntax
 from functools import wraps
+import math
+import numpy as np
 import logging
 import time
 import sys
@@ -129,6 +131,10 @@ class SIMgui(QMainWindow):
         
         # set the default poll rate in the gui {Float}
         self.SensorPollRateBox.setValue(self.pollRate)
+        self.ActiveTempControlCheckBox.setChecked(False) #self.ActiveTempControlCheckBox.isChecked())
+        # self.ActiveTempControlCheckBox.clicked.connect(lambda: print("clicked")) #self.ActiveTempControlCheckBox.isChecked())
+        
+        
         # set the default target temperature in the gui {Int}
         self.TargetTempSelectBox.setValue(int(self.target_temperature))
         self.RoomTempSelectBox.setValue(int(self.room.getTemperature()))
@@ -149,12 +155,12 @@ class SIMgui(QMainWindow):
         # canvas setup for temperature and humidity graphs
         # And build graphs after canvas is added to layout
         self.TempCanvas = FigureCanvas(Figure(figsize=(3, 3), layout='tight'))
-        self.verticalLayout.addWidget(self.TempCanvas)
+        self.TempGraphLayout.addWidget(self.TempCanvas)
         self.temp_ax = self.TempCanvas.figure.subplots()
         self.temp_ax.set_xlim(0, self.temperatureValues.maxlen)
 
         self.HumidCanvas = FigureCanvas(Figure(figsize=(3, 3), layout='tight'))
-        self.verticalLayout_2.addWidget(self.HumidCanvas)
+        self.HumidGraphLayout.addWidget(self.HumidCanvas)
         self.humid_ax = self.HumidCanvas.figure.subplots()
         self.humid_ax.set_xlim(0, self.humidityValues.maxlen)
 
@@ -162,7 +168,11 @@ class SIMgui(QMainWindow):
         self.PollRateConfirm.clicked.connect(lambda: self.setPollRate(self.SensorPollRateBox.value()))
         self.TargetThreshConfirm.clicked.connect(lambda: self.setTempThreshold(self.TargetThreshSelectBox.value()))
         self.TargetTempConfirm.clicked.connect(lambda: self.setTargetTemperature(self.TargetTempSelectBox.value()))
-        # TODO: add lux slider and threshold
+        
+        # lux slider and threshold
+        self.OutsideLuxSlider.valueChanged.connect(lambda: self.room.setLightLevelLux(self.OutsideLuxSlider.value()))
+        self.OutsideLuxSlider.valueChanged.connect(lambda: print("SLIDING: ", self.room.getLightLevelLux()))
+        self.LuxThreshConfirm.clicked.connect(lambda: self.setLuxThreshold(self.LuxThreshSelectBox.value()))
 
 
         self.RoomTempConfirm.clicked.connect(lambda: self.room.setTemperature(self.RoomTempSelectBox.value()))
@@ -173,7 +183,7 @@ class SIMgui(QMainWindow):
         # set the state of the heater and cooler checkboxes
         self.HeaterStateBox.setChecked(self.room.isHeaterActive())
         self.CoolerStateBox.setChecked(self.room.isCoolerActive())
-        #self.SunscreenStateBox.setChecked(self.room.isSunscreenActive())
+        self.SunscreenStateBox.setChecked(self.room.isSunscreenActive())
 
 
         # generate commands based on the measured temperature and execute them
@@ -254,10 +264,28 @@ class SIMgui(QMainWindow):
         # Calculate LDR resistance LDR_R using voltage and R1
         LDR_R = R1 * (VCC - voltage) / voltage
 
+   
+        # get callibration values for conversion from lux to ldr resistance and back
+        # def calculateLDRResistance(self, lux,  R10lx, gamma): 
+        #     return (10 ** gamma) * R10lx / (lux ** gamma)
+        
+        # loglist = []
+        # luxList = []
+        # # fill a list with ldr_R values from the calculateLDRResistance function and calculate the logfit
+        # for i in [1,2,10,100,1000,10000,100000]:
+        #     luxList.append(i)
+        #     loglist.append(calculateLDRResistance(i, R10lx, gamma))
+        
+        # logFit = np.polyfit(np.log(luxList), np.log(loglist), 1)
+        # print(logFit) # [ -0.6 ,  10.99735654]
+        print(f"Log(R10lx) = {math.log(R10lx)}")
         # Calculate lux using gamma formula
-        lux = (10 ** gamma) * R10lx / (LDR_R ** gamma)
+        a = (math.log(LDR_R) - 11.02) / -gamma # max error% = -8.7% at 100000 lux, lower error at lower lux levels around -0.5 to 3%
+        lux = math.exp(a)
         
         return lux
+
+    
 
 
     def setPollRate(self, nPollRate: float) -> None:
@@ -295,16 +323,16 @@ class SIMgui(QMainWindow):
         Returns: tuple -- Commands for the heater and cooler
         """
 
-        # TODO: 
-        # add extra Bool of button for active cooling always allowed    
 
         OutStates = [heater_state, cooler_state, sunscreen_state] # default state of the heater and cooler and sunscreen
-
+        # print(f"Calculated Lux level: {lux}   from : {self.firmata.analogRead(LDR)}    Room lux: {self.room.getLightLevelLux()}   Error%: {  ((lux - self.room.getLightLevelLux())/ self.room.getLightLevelLux()) * 100 }%")
         if lux > lux_threshold:
             OutStates[2] = True
         else:
             OutStates[2] = False
 
+        # TODO: 
+        # add extra Bool of button for active Temp Control always allowed    
         
         if inside_temp < target_temperature - temp_threshold and outside_temp < inside_temp:
             OutStates[0] = True
@@ -328,8 +356,9 @@ class SIMgui(QMainWindow):
         """Executes the commands for the heater and cooler
 
         Arguments:
-            heaterCommand {bool} -- The command for the heater
-            coolerCommand {bool} -- The command for the cooler
+            heaterCommand    {bool} -- The command for the heater
+            coolerCommand    {bool} -- The command for the cooler
+            sunscreenCommand {bool} -- The command for the sunscreen
 
         Returns: None
 
@@ -343,7 +372,7 @@ class SIMgui(QMainWindow):
         # sets the state of the checkboxes in the GUI
         self.HeaterStateBox.setChecked(heaterCommand)
         self.CoolerStateBox.setChecked(coolerCommand)
-        #self.SunscreenStateBox.setChecked(sunscreenCommand)
+        self.SunscreenStateBox.setChecked(sunscreenCommand)
 
 
     def updatePlots(self, temp: Union[float, int], humid: Union[float, int]) -> None:
@@ -355,7 +384,6 @@ class SIMgui(QMainWindow):
         Returns: None
 
         """
-        # print("Temp: " + str(temp) + " Humid: " + str(humid))
         # add the new values to the deque
         self.temperatureValues.append(temp)
         self.humidityValues.append(humid)
