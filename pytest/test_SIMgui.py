@@ -18,7 +18,7 @@ def test_SIMgui_initialization(gui):
     assert gui.room is not None
     # testing default values
     assert gui.target_temperature == 20
-    assert gui.pollRate == 1.0
+    assert gui.PollInterval == 1.0
     assert gui.threshold == 0.5
     assert gui.temperatureValues.maxlen == 10
     
@@ -102,14 +102,14 @@ def test_update_plots(gui):
 
 def test_set_poll_rate(gui):
     # Test initial poll rate
-    assert gui.pollRate == 1.0
+    assert gui.PollInterval == 1.0
     # Set a new poll rate
-    gui.setPollRate(2.0)
+    gui.setPollInterval(2.0)
     # Test the updated poll rate
-    assert gui.pollRate == 2.0
+    assert gui.PollInterval == 2.0
     # test invalid poll rate
-    gui.setPollRate(-1.0)
-    assert gui.pollRate == 2.0
+    gui.setPollInterval(-1.0)
+    assert gui.PollInterval == 2.0
 
 def test_set_threshold(gui):
 
@@ -157,7 +157,7 @@ def test_simulation_gui_system_test(gui):
     assert isinstance(gui, SIMgui)
 
     # Check initial values
-    assert gui.pollRate == 1.0
+    assert gui.PollInterval == 1.0
     assert gui.target_temperature == 20
     assert gui.threshold == 0.5
 
@@ -171,8 +171,8 @@ def test_simulation_gui_system_test(gui):
     assert gui.room.getOutsideTemperature() == 10 + offset
 
     # Change poll rate
-    gui.setPollRate(0.5)
-    assert gui.pollRate == 0.5
+    gui.setPollInterval(0.5)
+    assert gui.PollInterval == 0.5
 
     # Wait for some time to let the simulation run
     time.sleep(5)
@@ -192,8 +192,8 @@ def test_simulation_gui_system_test(gui):
     assert gui.humidityValues[-1] == 40
 
     # Set a new poll rate and check if the observer is updated
-    gui.setPollRate(3.0)
-    assert gui.pollRate == 3.0
+    gui.setPollInterval(3.0)
+    assert gui.PollInterval == 3.0
     assert len(gui.temperatureValues) == 0
     assert len(gui.humidityValues) == 0
     

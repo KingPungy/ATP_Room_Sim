@@ -32,7 +32,7 @@ class SIMgui(QMainWindow):
     ----------
     `room` : Room
         The room object that the simulation is based on
-    `pollRate` : float
+    `PollInterval` : float
         The rate at which the temperature is polled in seconds
     `target_temperature` : float
         The target temperature of the room in degrees Celsius
@@ -56,7 +56,7 @@ class SIMgui(QMainWindow):
         The vertical layout for the temperature graph
     `verticalLayout_2` : PyQt5.QtWidgets.QVBoxLayout
         The vertical layout for the humidity graph
-    `SensorPollRateBox` : PyQt5.QtWidgets.QDoubleSpinBox
+    `SensorPollIntervalBox` : PyQt5.QtWidgets.QDoubleSpinBox
         The spin box for the poll rate
     `RoomTempSelectBox` : PyQt5.QtWidgets.QDoubleSpinBox
         The spin box for the room temperature
@@ -68,7 +68,7 @@ class SIMgui(QMainWindow):
         The spin box for the heater power
     `CoolerBTUSelectBox` : PyQt5.QtWidgets.QDoubleSpinBox
         The spin box for the cooler power
-    `PollRateConfirm` : PyQt5.QtWidgets.QPushButton
+    `PollIntervalConfirm` : PyQt5.QtWidgets.QPushButton
         The button for confirming the poll rate
     `RoomTempConfirm` : PyQt5.QtWidgets.QPushButton
         The button for confirming the room temperature
@@ -95,7 +95,7 @@ class SIMgui(QMainWindow):
         Updates the plots with the new temperature and humidity values
     `updateObserver()` : None
         Updates the observer with the current poll rate
-    `setPollRate(nPollRate)` : None
+    `setPollInterval(nPollInterval)` : None
         Sets the poll rate of the observer and updates the observer
     `purgeGraphData()` : None
         Purges the graph data by clearing the deque
@@ -123,14 +123,14 @@ class SIMgui(QMainWindow):
 
 
         # Default values for the gui
-        self.pollRate = 1.0             # default poll rate
+        self.PollInterval = 1.0             # default poll rate
         self.target_temperature = 20    # default target temperature
         self.temp_threshold = 0.5            # threshold for temperature 
 
         self.lux_threshold = 10000     # threshold for light level  
         
         # set the default poll rate in the gui {Float}
-        self.SensorPollRateBox.setValue(self.pollRate)
+        self.SensorPollIntervalBox.setValue(self.PollInterval)
         self.ActiveTempControlCheckBox.setChecked(False) #self.ActiveTempControlCheckBox.isChecked())
         # self.ActiveTempControlCheckBox.clicked.connect(lambda: print("clicked")) #self.ActiveTempControlCheckBox.isChecked())
         
@@ -165,13 +165,13 @@ class SIMgui(QMainWindow):
         self.humid_ax.set_xlim(0, self.humidityValues.maxlen)
 
         # set up the buttons and spin boxes for the gui
-        self.PollRateConfirm.clicked.connect(lambda: self.setPollRate(self.SensorPollRateBox.value()))
+        self.PollIntervalConfirm.clicked.connect(lambda: self.setPollInterval(self.SensorPollIntervalBox.value()))
         self.TargetThreshConfirm.clicked.connect(lambda: self.setTempThreshold(self.TargetThreshSelectBox.value()))
         self.TargetTempConfirm.clicked.connect(lambda: self.setTargetTemperature(self.TargetTempSelectBox.value()))
         
         # lux slider and threshold
         self.OutsideLuxSlider.valueChanged.connect(lambda: self.room.setLightLevelLux(self.OutsideLuxSlider.value()))
-        self.OutsideLuxSlider.valueChanged.connect(lambda: print("SLIDING: ", self.room.getLightLevelLux()))
+        # self.OutsideLuxSlider.valueChanged.connect(lambda: print("SLIDING: ", self.room.getLightLevelLux()))
         self.LuxThreshConfirm.clicked.connect(lambda: self.setLuxThreshold(self.LuxThreshSelectBox.value()))
 
 
@@ -300,25 +300,25 @@ class SIMgui(QMainWindow):
     
 
 
-    def setPollRate(self, nPollRate: float) -> None:
+    def setPollInterval(self, nPollInterval: float) -> None:
         """ Sets the poll rate of the observer and updates the observer
 
         calls `self.UpdateObserver()` and `self.purgeGraphData()` to update the observer and purge the graph data to start fresh with the new poll rate
 
-        Arguments: `nPollRate` {float} -- The new poll rate
+        Arguments: `nPollInterval` {float} -- The new poll rate
 
         Returns: None
 
         """
-        if nPollRate <= 0:
-            self.SensorPollRateBox.setValue(self.pollRate)
+        if nPollInterval <= 0:
+            self.SensorPollIntervalBox.setValue(self.PollInterval)
             Exception("Poll Rate must be greater than 0, setting to 1, try again")
             print("Poll Rate must be greater than 0, setting to 1, try again") # for user
         else:
-            self.pollRate = nPollRate
+            self.PollInterval = nPollInterval
             self.purgeGraphData()
             self.updateObserver()
-            print(f"Poll Rate set to: {str(self.pollRate)}/s")
+            print(f"Poll Rate set to: {str(self.PollInterval)}/s")
 
 
     def generateCommands(self,inside_temp: float, outside_temp: float, target_temperature: float, temp_threshold: float, heater_state: bool, cooler_state: bool, sunscreen_state: bool, ActiveTempControlEnabled: bool, lux:float, lux_threshold:float) -> list[bool]:
@@ -346,16 +346,24 @@ class SIMgui(QMainWindow):
         else:
             OutStates[2] = False
 
- 
-        if inside_temp < target_temperature - temp_threshold and ((outside_temp < inside_temp) or ActiveTempControlEnabled): 
-            # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
-            OutStates[0] = True
-            OutStates[1] = False
+        print(f"inside temp: {inside_temp} vs outside temp: {outside_temp}")
+        if inside_temp < target_temperature - temp_threshold: # inside temperature is below the acceptable target temperature - threshold
+            if ((outside_temp < target_temperature) or ActiveTempControlEnabled): 
+                # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
+                OutStates[0] = True # active temp control and in case otherwise unreachable target temperature
+            else:
+                OutStates[0] = False # passive temp control
+            
+            OutStates[1] = False # Always turn off the cooler in this case
             return OutStates
-        elif inside_temp > target_temperature + temp_threshold and ((outside_temp > inside_temp) or ActiveTempControlEnabled): 
-            # if the temperature is above the target temperature and the outside temperature is higher than the inside temperature or the active temp control is enabled: turn on the cooler
-            OutStates[0] = False
-            OutStates[1] = True
+        elif inside_temp > target_temperature + temp_threshold: # inside temperature is above the acceptable target temperature + threshold
+            if ((outside_temp > target_temperature) or ActiveTempControlEnabled): 
+                # if the temperature is above the target temperature and the outside temperature is higher than the inside temperature or the active temp control is enabled: turn on the cooler
+                OutStates[1] = True # active temp control and in case otherwise unreachable target temperature
+            else:
+                OutStates[1] = False # passive temp control
+            
+            OutStates[0] = False # Always turn off the heater in this case
             return OutStates
         elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state: # if the temperature is within the acceptable range and the heater is on: turn it off
             OutStates[0] = False
@@ -462,7 +470,7 @@ class SIMgui(QMainWindow):
         if self.observablePoll != None:
             self.observablePoll.dispose() if self.observablePoll != None else None
 
-        self.observablePoll = rx.interval(1.0/self.pollRate).pipe(
+        self.observablePoll = rx.interval(self.PollInterval).pipe(
             ops.map(lambda Data : self.temperature_light_subject.on_next(
                 [self.firmata.digitalRead(DHT22_1), self.firmata.digitalRead(DHT22_2), self.calculateLuxFromADC(self.firmata.analogRead(LDR))]
                 ))

@@ -18,7 +18,7 @@ def gui():
 def test_gui_initialization(gui):
     # testing default values of SIMgui
     assert gui.target_temperature == 20
-    assert gui.pollRate == 1.0
+    assert gui.PollInterval == 1.0
     assert gui.threshold == 0.5
     assert gui.temperatureValues.maxlen == 10
     
