@@ -193,10 +193,14 @@ class SIMgui(QMainWindow):
             # # ops.map(lambda RawData: self.ConvertRawDataToCelciusAndLux(RawData[0], RawData[1], RawData[2])), 
             # Functie wordt meegegeven als argument om de commands te genereren op basis van de temperatuur
             # data object is als volgt opgebouwd: [[inside_temp, inside_humid], [outside_temp, outside_humid], light_level_lux]
-            ops.map(lambda data: self.generateCommands(data[0][0], 
-                                                       self.firmata.digitalRead(RELAY_HEATER), self.firmata.digitalRead(RELAY_COOLER), self.firmata.digitalRead(RELAY_SUNSCREEN), 
-                                                       data[1][0], self.target_temperature, self.temp_threshold, self.lux_threshold,
-                                                       data[2])),
+            ops.map(lambda data: self.generateCommands(inside_temp=data[0][0], outside_temp=data[1][0], 
+                                                       target_temperature=self.target_temperature, temp_threshold=self.temp_threshold,
+                                                       heater_state=self.firmata.digitalRead(RELAY_HEATER), 
+                                                       cooler_state=self.firmata.digitalRead(RELAY_COOLER), 
+                                                       sunscreen_state=self.firmata.digitalRead(RELAY_SUNSCREEN), 
+                                                       ActiveTempControlEnabled=self.ActiveTempControlCheckBox.isChecked(),
+                                                       lux=data[2], lux_threshold=self.lux_threshold
+                                                       )),
             ops.map(lambda commands: self.executeCommands(heaterCommand=commands[0], coolerCommand=commands[1], sunscreenCommand=commands[2]))
             ).subscribe() 
         
@@ -243,7 +247,7 @@ class SIMgui(QMainWindow):
     def setLuxThreshold(self, lux_threshold: int) -> None:
         """Sets the `lux_threshold`
 
-        Arguments: lux_threshold {int} -- The lux threshold
+        Arguments: lux_threshold {int}: The lux threshold
         
         Returns: None
 
@@ -252,11 +256,19 @@ class SIMgui(QMainWindow):
         print(f"Light Level Threshold set to: {str(self.lux_threshold)}")
     
     def calculateLuxFromADC(self,mapped_value:int) -> Union[float, int]:
+        """Calculates the lux value from an ADC mapped value.
+
+        Args:
+            mapped_value {int}: The ADC mapped value.
+            
+        Returns:
+            float or int: The lux value calculated from the given ADC mapped value.
+        """
         # Constants for your LDR setup (should match the constants used in the Arduino code)
         R10lx = 15000.0  # Light resistance at 10 lux in ohms
-        gamma = 0.6     # Gamma value
-        R1 = 5000.0     # Resistor R1 in ohms
-        VCC = 5.0       # Supply voltage in volts
+        gamma = 0.6      # Gamma value
+        R1 = 5000.0      # Resistor R1 in ohms from voltage divider
+        VCC = 5.0        # Supply voltage in volts
 
         # Calculate voltage from mapped value
         voltage = (mapped_value / 1024.0) * VCC
@@ -264,7 +276,6 @@ class SIMgui(QMainWindow):
         # Calculate LDR resistance LDR_R using voltage and R1
         LDR_R = R1 * (VCC - voltage) / voltage
 
-   
         # get callibration values for conversion from lux to ldr resistance and back
         # def calculateLDRResistance(self, lux,  R10lx, gamma): 
         #     return (10 ** gamma) * R10lx / (lux ** gamma)
@@ -278,7 +289,8 @@ class SIMgui(QMainWindow):
         
         # logFit = np.polyfit(np.log(luxList), np.log(loglist), 1)
         # print(logFit) # [ -0.6 ,  10.99735654]
-        print(f"Log(R10lx) = {math.log(R10lx)}")
+        # print(f"Log(R10lx) = {math.log(R10lx)}")
+        
         # Calculate lux using gamma formula
         a = (math.log(LDR_R) - 11.02) / -gamma # max error% = -8.7% at 100000 lux, lower error at lower lux levels around -0.5 to 3%
         lux = math.exp(a)
@@ -309,21 +321,24 @@ class SIMgui(QMainWindow):
             print(f"Poll Rate set to: {str(self.pollRate)}/s")
 
 
-    def generateCommands(self,inside_temp: float, heater_state: bool, cooler_state: bool, sunscreen_state: bool, outside_temp: float, target_temperature: float, temp_threshold: float, lux_threshold:float, lux:float) -> list[bool]:
-        """Generates commands based on the temperature and outside temperature
+    def generateCommands(self,inside_temp: float, outside_temp: float, target_temperature: float, temp_threshold: float, heater_state: bool, cooler_state: bool, sunscreen_state: bool, ActiveTempControlEnabled: bool, lux:float, lux_threshold:float) -> list[bool]:
+        """Generate commands to control the heater, cooler and sunscreen based on temperature and light levels.
 
-        Arguments: 
-            temp {float} -- The current temperature of the room
-            heater_state {bool} -- The state of the heater
-            cooler_state {bool} -- The state of the cooler
-            outside_temp {float} -- The outside temperature
-            target_temperature {float} -- The desired temperature
-            temp_threshold {float} -- The acceptable temperature range
+        Args:
+            inside_temp (float): The current temperature inside the room.
+            outside_temp (float): The current temperature outside the room.
+            target_temperature (float): The desired temperature inside the room.
+            temp_threshold (float): The acceptable range of temperatures around the target temperature.
+            heater_state (bool): The current state of the heater.
+            cooler_state (bool): The current state of the cooler.
+            sunscreen_state (bool): The current state of the sunscreen.
+            ActiveTempControlEnabled (bool): Whether active temperature control is enabled.
+            lux (float): The current light level in the room.
+            lux_threshold (float): The threshold at which the sunscreen should be activated.
 
-        Returns: tuple -- Commands for the heater and cooler
-        """
-
-
+        Returns:
+            list[bool]: A list of booleans representing the new states of the heater, cooler and sunscreen.
+        """ 
         OutStates = [heater_state, cooler_state, sunscreen_state] # default state of the heater and cooler and sunscreen
         # print(f"Calculated Lux level: {lux}   from : {self.firmata.analogRead(LDR)}    Room lux: {self.room.getLightLevelLux()}   Error%: {  ((lux - self.room.getLightLevelLux())/ self.room.getLightLevelLux()) * 100 }%")
         if lux > lux_threshold:
@@ -331,40 +346,37 @@ class SIMgui(QMainWindow):
         else:
             OutStates[2] = False
 
-        # TODO: 
-        # add extra Bool of button for active Temp Control always allowed    
-        
-        if inside_temp < target_temperature - temp_threshold and outside_temp < inside_temp:
+ 
+        if inside_temp < target_temperature - temp_threshold and ((outside_temp < inside_temp) or ActiveTempControlEnabled): 
+            # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
             OutStates[0] = True
             OutStates[1] = False
             return OutStates
-        elif inside_temp > target_temperature + temp_threshold and outside_temp > inside_temp:
+        elif inside_temp > target_temperature + temp_threshold and ((outside_temp > inside_temp) or ActiveTempControlEnabled): 
+            # if the temperature is above the target temperature and the outside temperature is higher than the inside temperature or the active temp control is enabled: turn on the cooler
             OutStates[0] = False
             OutStates[1] = True
             return OutStates
-        elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state:
+        elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state: # if the temperature is within the acceptable range and the heater is on: turn it off
             OutStates[0] = False
             return OutStates
-        elif inside_temp <= target_temperature + (temp_threshold / 2) and cooler_state:
+        elif inside_temp <= target_temperature + (temp_threshold / 2) and cooler_state: # if the temperature is within the acceptable range and the cooler is on: turn it off
             OutStates[1] = False
             return OutStates
         
-
         return OutStates
 
     def executeCommands(self, heaterCommand: bool, coolerCommand: bool, sunscreenCommand: bool) -> None:
-        """Executes the commands for the heater and cooler
-
-        Arguments:
-            heaterCommand    {bool} -- The command for the heater
-            coolerCommand    {bool} -- The command for the cooler
-            sunscreenCommand {bool} -- The command for the sunscreen
-
-        Returns: None
-
-        """
+        """This function sets the state of the checkboxes in the GUI and writes the given commands to the firmata.
         
-
+        Args:
+            heaterCommand (bool): The state of the heater.
+            coolerCommand (bool): The state of the cooler.
+            sunscreenCommand (bool): The state of the sunscreen.
+        
+        Returns:
+            None
+        """
         self.firmata.digitalWrite(RELAY_HEATER, heaterCommand)
         self.firmata.digitalWrite(RELAY_COOLER, coolerCommand)
         self.firmata.digitalWrite(RELAY_SUNSCREEN, sunscreenCommand)
