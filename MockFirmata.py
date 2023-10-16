@@ -27,7 +27,7 @@ class MockFirmata:
         self.Connected = False
         self.pinTypes = { "d": 0, "a": 1 }
         self.pinModes = { "EMPTY": 0, "DHT22_1": 1, "DHT22_2": 2, "RELAY_HEATER": 3, "RELAY_COOLER": 4, "RELAY_SUNSCREEN": 5, "LDR": 6 }
-
+    
     def begin(self) -> bool:
         """
         Checks if MockArduino is connected to specified port and returns a boolean value. 
@@ -103,7 +103,7 @@ class MockFirmata:
         """
         self.MockArduino.set_digital_pin(pin, value)
             
-    def digitalRead(self, pin:int) -> [bool,[float,float]]: # TODo make tuple
+    def digitalRead(self, pin:int) -> [bool,[float,float]]:
         """
         Reads the digital value of a specified pin on an Arduino board.
         

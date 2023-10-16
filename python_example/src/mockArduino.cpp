@@ -50,10 +50,10 @@ void mockArduino::set_pin_mode(int pin_type, int pin_num , int pin_mode) {
     } else if (pin_type == 1) {
         if (0 <= pin_num && pin_num <= 16) { // analog
             // check if pin is input or output
-            if ( pin_mode == 0 || pin_mode == 6) {;
+            if ( pin_mode == 6) {;
                 this->analogPins[pin_num] = pin_mode;
             } else {
-                throw std::invalid_argument("Invalid pin mode. Expected one of the following 0 or 6.");
+                throw std::invalid_argument("Invalid pin mode. Expected 6. Got: " + std::to_string(pin_mode));
             }
         } else {
             throw std::invalid_argument("Invalid pin number. Expected a value between 0 and 16.");
@@ -149,7 +149,8 @@ std::variant<bool, double,std::vector<double>, int> mockArduino::get_pin_data(in
         if (this->analogPins[pin_num] == LDR){
             return this->read_LDR();
         } else {
-            throw std::invalid_argument("Invalid pin mode of given pin. Expected 6 for LDR.");
+            // py::print(this->analogPins[pin_num]);
+            throw std::invalid_argument("Invalid pin mode of given pin: " + std::to_string(pin_num) +  " Expected 6 for LDR. got: " + std::to_string(this->analogPins[pin_num]));
         }
     } else {
         // return error

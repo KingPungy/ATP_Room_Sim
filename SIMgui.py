@@ -25,6 +25,7 @@ from MockFirmata import MockFirmata # mock arduino class
 from constants import * # pin definitions
 
 
+
 class SIMgui(QMainWindow):
     """A class representing the gui for the simulation and the logic for the simulation
 
@@ -104,9 +105,9 @@ class SIMgui(QMainWindow):
 
     def __del__(self):
         
-        print("Disposed of Observer and subscribers")
+        # print("Disposed of Observer and subscribers")
         self.observablePoll.dispose()
-        self.temperature_subject.dispose()
+        self.temperature_light_subject.dispose()
 
     def __init__(self, MockFirmata: MockFirmata = None, graphLength: int = 10):
         super(SIMgui, self).__init__()
@@ -297,8 +298,6 @@ class SIMgui(QMainWindow):
         
         return lux
 
-    
-
 
     def setPollInterval(self, nPollInterval: float) -> None:
         """ Sets the poll rate of the observer and updates the observer
@@ -346,7 +345,7 @@ class SIMgui(QMainWindow):
         else:
             OutStates[2] = False
 
-        print(f"inside temp: {inside_temp} vs outside temp: {outside_temp}")
+        # print(f"inside temp: {inside_temp} vs outside temp: {outside_temp}")
         if inside_temp < target_temperature - temp_threshold: # inside temperature is below the acceptable target temperature - threshold
             if ((outside_temp < target_temperature) or ActiveTempControlEnabled): 
                 # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
