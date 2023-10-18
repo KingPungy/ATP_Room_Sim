@@ -187,7 +187,7 @@ class SIMgui(QMainWindow):
         self.SunscreenStateBox.setChecked(self.room.isSunscreenActive())
 
 
-        # generate commands based on the measured temperature and execute them
+        # generate commands based on the measured temperature and Light level and execute them
         # add inside temp, outside temp and light level as pipe inputs to the subject stream
         self.temperature_light_subject.pipe(
             # OPTIONAL in current version without real Hardware: convert raw sensor data to celcius
@@ -207,7 +207,7 @@ class SIMgui(QMainWindow):
         
         # update the plots when the temperature is updated
         # Temperature is simulated, humidity is not so it stays at 50%
-        self.temperature_light_subject.subscribe(on_next=lambda data: self.updatePlots(data[0][0], self.room.getHumidity()))  
+        self.temperature_light_subject.subscribe(on_next=lambda data: self.updatePlots(data[0][0], data[0][1]))  
 
         # create an observable that emits every 1/poll_rate seconds and updates the temperature_subject with the current temperature of the room
         self.updateObserver()
@@ -345,29 +345,32 @@ class SIMgui(QMainWindow):
         else:
             OutStates[2] = False
 
-        # print(f"inside temp: {inside_temp} vs outside temp: {outside_temp}")
-        if inside_temp < target_temperature - temp_threshold: # inside temperature is below the acceptable target temperature - threshold
+        # inside temperature is below the acceptable target temperature - threshold
+        if inside_temp < target_temperature - temp_threshold: 
+            # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
             if ((outside_temp < target_temperature) or ActiveTempControlEnabled): 
-                # if the temperature is below the target temperature and the outside temperature is lower than the inside temperature or the active temp control is enabled: turn on the heater
                 OutStates[0] = True # active temp control and in case otherwise unreachable target temperature
             else:
                 OutStates[0] = False # passive temp control
             
             OutStates[1] = False # Always turn off the cooler in this case
             return OutStates
-        elif inside_temp > target_temperature + temp_threshold: # inside temperature is above the acceptable target temperature + threshold
+        # inside temperature is above the acceptable target temperature + threshold
+        elif inside_temp > target_temperature + temp_threshold: 
+            # if the temperature is above the target temperature and the outside temperature is higher than the inside temperature or the active temp control is enabled: turn on the cooler
             if ((outside_temp > target_temperature) or ActiveTempControlEnabled): 
-                # if the temperature is above the target temperature and the outside temperature is higher than the inside temperature or the active temp control is enabled: turn on the cooler
                 OutStates[1] = True # active temp control and in case otherwise unreachable target temperature
             else:
                 OutStates[1] = False # passive temp control
             
             OutStates[0] = False # Always turn off the heater in this case
             return OutStates
-        elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state: # if the temperature is within the acceptable range and the heater is on: turn it off
+        # if the temperature is within the acceptable range and the heater is on: turn it off
+        elif inside_temp >= target_temperature - (temp_threshold / 2) and heater_state:             
             OutStates[0] = False
             return OutStates
-        elif inside_temp <= target_temperature + (temp_threshold / 2) and cooler_state: # if the temperature is within the acceptable range and the cooler is on: turn it off
+        # if the temperature is within the acceptable range and the cooler is on: turn it off
+        elif inside_temp <= target_temperature + (temp_threshold / 2) and cooler_state: 
             OutStates[1] = False
             return OutStates
         
@@ -432,7 +435,7 @@ class SIMgui(QMainWindow):
         self.humid_ax.set_xlim(
             len(self.humidityValues)-self.humidityValues.maxlen, len(self.humidityValues))
 
-        # # set the x axis to the length of the deque
+        # # set the x axis to the length of the deque: 
         # self.temp_ax.set_xlim(0,self.temperatureValues.maxlen)
         # self.humid_ax.set_xlim(0,self.humidityValues.maxlen)
 
@@ -463,17 +466,17 @@ class SIMgui(QMainWindow):
         Returns: None
 
         """
-        # optimal_thread_count = multiprocessing.cpu_count()
-        # pool_scheduler = ThreadPoolScheduler(optimal_thread_count)
-
         if self.observablePoll != None:
             self.observablePoll.dispose() if self.observablePoll != None else None
 
         self.observablePoll = rx.interval(self.PollInterval).pipe(
             ops.map(lambda Data : self.temperature_light_subject.on_next(
-                [self.firmata.digitalRead(DHT22_1), self.firmata.digitalRead(DHT22_2), self.calculateLuxFromADC(self.firmata.analogRead(LDR))]
+                [self.firmata.digitalRead(DHT22_1), 
+                 self.firmata.digitalRead(DHT22_2), 
+                 self.calculateLuxFromADC(self.firmata.analogRead(LDR))]
                 ))
         ).subscribe()
+        
         print("Observer Created/Updated")
   
 
