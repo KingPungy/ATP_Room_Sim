@@ -253,6 +253,12 @@ def test_update_observer(gui):
     assert gui.observablePoll is not None
     assert gui.observablePoll != previous_poll
 
+
+#TODO: add an assert for some error being handled
+# - the user tries to set the poll interval to 0 check
+# - the sensor is not connected
+# - the arduino is not connected
+# - the user tries to set the lux threshold to 0
 def test_simulation_gui_system_test(gui):
     
     # Initialize the SIMgui class
@@ -304,6 +310,20 @@ def test_simulation_gui_system_test(gui):
     assert not gui.room.isHeaterActive()
     assert not gui.room.isCoolerActive()
     assert not gui.room.isSunscreenActive()
+
+
+    gui.setPollInterval(0) # de gebruiker probeert de poll interval op 0 te zetten maar dit mag niet
+    assert gui.PollInterval == 0.2 # de poll interval is niet veranderd
+    gui.setPollInterval(0.5) # de gebruiker probeert de poll interval op 0.5 te zetten
+    assert gui.PollInterval == 0.5 # de poll interval is nu 0.5
+    assert len(gui.temperatureValues) == 0 # de grafiek is gereset
+    assert len(gui.humidityValues) == 0 # de grafiek is gereset
+
+    gui.setLuxThreshold(0) # de gebruiker probeert de lux threshold op 0 te zetten maar dit mag niet
+    assert gui.lux_threshold == 20000 # de lux threshold is niet veranderd
+    gui.setLuxThreshold(2000) # de gebruiker probeert de lux threshold op 1000 te zetten
+    assert gui.lux_threshold == 2000 # de lux threshold is nu 1000
+
 
     # het is nu heel warm binnen maar de koeling gaat niet aan omdat het buiten koud is
     gui.ActiveTempControlCheckBox.setChecked(True) # de gebruiker wil nu dat de koeling wel aan gaat ook als het buiten koud genoeg is voor passieve koeling
