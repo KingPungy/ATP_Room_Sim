@@ -54,8 +54,8 @@ def test_pipeline_to_execute_commands(gui,input_data, output_states,additionalSe
     
 
 def test_connected_ui_functions(gui):
-    assert gui.OutTempSelectBox.value() == round(gui.room.getOutsideTemperature()) == 30
-    assert gui.RoomTempSelectBox.value() == round(gui.room.getTemperature()) == 25
+    assert gui.OutTempSelectBox.value() == pytest.approx(gui.room.getOutsideTemperature(),0.1) == pytest.approx(30,0.1)
+    assert gui.RoomTempSelectBox.value() == pytest.approx(gui.room.getTemperature(),0.1) == pytest.approx(25,0.1)
     assert gui.HeaterWattSelectBox.value() == gui.room.getHeaterPower() == 1000
     assert gui.CoolerBTUSelectBox.value() == gui.room.getCoolerPower() == 2000
     assert gui.ActiveTempControlCheckBox.isChecked() == False

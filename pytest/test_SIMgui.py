@@ -186,11 +186,12 @@ def test_set_temp_threshold(gui, threshold, expected_threshold):
 
 
 @pytest.mark.parametrize("lux_threshold, expected_threshold", [
-    (1,1),
-    (-1,10000),
-    (500,500),
-    (10000,10000),
-    (0,10000),
+    (1,1), # should work
+    (-1,10000), # should not work
+    (500,500), # should work
+    (10000,10000), # should work
+    (0,10000), # should not work
+    (100001,100001), # should work but has no effect because it is out of range of the LDR
     ])
 
 def test_lux_threshold(gui,lux_threshold,expected_threshold):
@@ -216,7 +217,7 @@ def test_lux_threshold(gui,lux_threshold,expected_threshold):
     (70000,0.06),
     (80000,0.06),
     (90000,0.06),
-    (99999,0.1),
+    (99999,0.1), # end of conversion spectrum has most error due to logarithmic nature of the conversion and the precision of the ADC conversion
 ])
 
 def test_lux_calculation(gui,expected_lux,max_error):
