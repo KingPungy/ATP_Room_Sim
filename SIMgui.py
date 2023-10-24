@@ -253,8 +253,13 @@ class SIMgui(QMainWindow):
         Returns: None
 
         """
-        self.lux_threshold = lux_threshold
-        print(f"Light Level Threshold set to: {str(self.lux_threshold)}")
+        if lux_threshold <= 0:
+            self.LuxThreshSelectBox.setValue(self.lux_threshold)
+            Exception("Lux Threshold must be greater than 0, setting to 1, try again")
+            print("Lux Threshold must be greater than 0, setting to 1, try again") # for user
+        else:
+            self.lux_threshold = lux_threshold
+            print(f"Light Level Threshold set to: {str(self.lux_threshold)}")
     
     def calculateLuxFromADC(self,mapped_value:int) -> Union[float, int]:
         """Calculates the lux value from an ADC mapped value.

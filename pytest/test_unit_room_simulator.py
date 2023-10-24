@@ -138,7 +138,30 @@ def test_set_out_of_sensor_range_outside_temperature():
     offset = room.getOutsideTemperature() - 30.0
     room.setOutsideTemperature(100.0)
     assert room.getOutsideTemperature() == pytest.approx(80.0 + offset,0.1)
-    
+
+
+def test_get_set_LightLevelLux():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])  
+    assert room.getLightLevelLux() == 10000  
+    room.setLightLevelLux(500)
+    assert room.getLightLevelLux() == 500
+
+    # Test invalid values
+    with pytest.raises(ValueError):
+        room.setLightLevelLux(-1)
+    with pytest.raises(ValueError):
+        room.setLightLevelLux(0)
+    with pytest.raises(ValueError):
+        room.setLightLevelLux(100001)
+
+def test_is_sunscreen_and_activate_sunscreen():
+    room = Room(25.0, 30.0, 50.0, [10.0, 10.0, 2.0])  
+    assert room.isSunscreenActive() == False
+    room.activateSunscreen(True)
+    assert room.isSunscreenActive() == True
+    room.activateSunscreen(False)
+    assert room.isSunscreenActive() == False
+
 
 if __name__ == "__main__":
     

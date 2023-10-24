@@ -88,15 +88,13 @@ def test_set_pin_mode_invalid_input(Firmata):
     
     with pytest.raises(Exception,match="Invalid pin number."):
         Firmata.setPinMode("d:60:DHT22_1")
+
+    with pytest.raises(Exception,match="Invalid pin number."):
+        Firmata.setPinMode("a:-1:LDR")
     
-    # with pytest.raises(Exception):
-    #     Firmata.setPinMode("d:7:INVALID_PINMODE")
+    with pytest.raises(Exception,match="Invalid pin number."):
+        Firmata.setPinMode("a:60:LDR")
     
-    # with pytest.raises(Exception):
-    #     Firmata.setPinMode("d:7:INVALID_PINMODE")
-    
-    # with pytest.raises(Exception):
-    #     Firmata.setPinMode("d:7:INVALID_PINMODE")
     
 
 # Test the digitalWrite method
@@ -135,17 +133,32 @@ def test_digital_analog_read_types(Firmata_with_pinModes):
     with pytest.raises(ValueError):
         Firmata_with_pinModes.analogRead(17)
         
+
+@pytest.mark.parametrize("lux,expected_result", [
+    (1,79),
+    (100,583),
+    (1000,861),
+    (10000,977),
+    (100000,1011),        
+])
+
+def test_read_LDR(Firmata_with_pinModes,lux,expected_result):
+
+    Firmata_with_pinModes.getRoomObject().setLightLevelLux(lux)
+
+    assert Firmata_with_pinModes.analogRead(LDR) != 0
+    assert Firmata_with_pinModes.analogRead(LDR) == pytest.approx(expected_result,0.01)
+
+def test_read_DHT(Firmata_with_pinModes):
+    # test the DHT22_1 pin
+    assert Firmata_with_pinModes.digitalRead(DHT22_1) != 0
+    assert Firmata_with_pinModes.digitalRead(DHT22_1)[0] == pytest.approx(25.0,0.01)
+    assert Firmata_with_pinModes.digitalRead(DHT22_1)[1] == pytest.approx(20.0,0.01)
     
-
-# Test the analogRead method
-def test_analog_read(Firmata):
-    pin = 0
-    Firmata.setPinMode(f"a:{pin}:LDR")
-    result = Firmata.analogRead(pin)
-    # You can add assertions to check the result, e.g., if it's a float
-
-
-
+    # test the DHT22_2 pin
+    assert Firmata_with_pinModes.digitalRead(DHT22_2) != 0
+    assert Firmata_with_pinModes.digitalRead(DHT22_2)[0] == pytest.approx(30.0,0.01)
+    assert Firmata_with_pinModes.digitalRead(DHT22_2)[1] == pytest.approx(20.0,0.01)
 
 if __name__ == "__main__":
     

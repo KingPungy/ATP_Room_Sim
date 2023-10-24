@@ -110,7 +110,9 @@ def test_set_target_temperature(gui):
 
 ])
 
-@pytest.mark.filterwarnings("ignore") # Ignore warnings from rx library caused by fast creating and disposing of observables
+# Ignore warnings from rx library caused by fast creating and disposing of observables 
+# because pytest can't reuse the same class for some reason
+@pytest.mark.filterwarnings("ignore") 
 def test_generate_commands_functional(gui,Command_Args,OutStates):
     assert gui.generateCommands(*Command_Args) == OutStates
     
@@ -182,6 +184,48 @@ def test_set_temp_threshold(gui, threshold, expected_threshold):
     # Test the updated threshold
     assert gui.temp_threshold == expected_threshold
 
+
+@pytest.mark.parametrize("lux_threshold, expected_threshold", [
+    (1,1),
+    (-1,10000),
+    (500,500),
+    (10000,10000),
+    (0,10000),
+    ])
+
+def test_lux_threshold(gui,lux_threshold,expected_threshold):
+    # Test the initial threshold
+    assert gui.lux_threshold == 10000
+
+    # Set the new threshold
+    gui.setLuxThreshold(lux_threshold)
+    # Test the updated threshold
+    assert gui.lux_threshold == expected_threshold
+
+@pytest.mark.parametrize("expected_lux,max_error", [
+    (1000,0.06),
+    (2000,0.06),
+    (3000,0.06),	
+    (5000,0.06),
+    (10000,0.06),
+    (15000,0.06),
+    (25000,0.06),
+    (40000,0.06),
+    (50000,0.06),
+    (60000,0.06),
+    (70000,0.06),
+    (80000,0.06),
+    (90000,0.06),
+    (99999,0.1),
+])
+
+def test_lux_calculation(gui,expected_lux,max_error):
+    # Test the initial lux level
+    assert gui.room.getLightLevelLux() == 10000
+    gui.room.setLightLevelLux(expected_lux)
+    assert gui.calculateLuxFromADC(gui.firmata.analogRead(LDR)) == pytest.approx(expected_lux, max_error)
+
+
 def test_purge_graph_data(gui):
 
     # Add some data to the graph
@@ -217,12 +261,13 @@ def test_simulation_gui_system_test(gui):
     assert gui.PollInterval == 1.0
     assert gui.target_temperature == 20
     assert gui.temp_threshold == 0.5
+    assert gui.lux_threshold == 10000
 
     # Change target temperature
     gui.setTargetTemperature(25)
     assert gui.target_temperature == 25
     
-    
+    # check if the outside temp is correct
     gui.room.setOutsideTemperature(10)
     offset = gui.room.getOutsideTemperature() - 10
     assert gui.room.getOutsideTemperature() == 10 + offset
@@ -231,6 +276,13 @@ def test_simulation_gui_system_test(gui):
     gui.setPollInterval(0.2)
     assert gui.PollInterval == 0.2
 
+
+    gui.setLuxThreshold(20000) # de gebruiker vind een beetje zon niet erg maar wil niet dat het te warm wordt vanwege de zon
+
+    gui.room.setLightLevelLux(50000) # the sun starts shining outside
+    gui.room.setOutsideTemperature(40) # het wordt erg warm buiten
+    gui.room.setTemperature(30) # it is somehow very hot inside right now
+
     # Wait for some time to let the simulation run
     time.sleep(2)
     
@@ -238,13 +290,30 @@ def test_simulation_gui_system_test(gui):
     assert len(gui.temperatureValues) > 0
     assert len(gui.humidityValues) > 0
 
-    # Execute some commands
-    gui.executeCommands(True, False, False)
-    assert gui.room.isHeaterActive()
+    # de verwachte state van het regelsysteem is dat de heater uit is, de cooler aan is en de sunscreen aan is
+    assert not gui.room.isHeaterActive()
+    assert gui.room.isCoolerActive()
+    assert gui.room.isSunscreenActive()
+
+    gui.room.setLightLevelLux(100) # the sun stops shining outside
+    gui.room.setOutsideTemperature(5) # het wordt koud buiten
+
+    # Wait for some time to let the simulation run
+    time.sleep(2)
+    assert not gui.room.isHeaterActive()
     assert not gui.room.isCoolerActive()
     assert not gui.room.isSunscreenActive()
 
-    gui.setPollInterval(2.0) # Set a new poll rate to ennext test will be more accurate
+    # het is nu heel warm binnen maar de koeling gaat niet aan omdat het buiten koud is
+    gui.ActiveTempControlCheckBox.setChecked(True) # de gebruiker wil nu dat de koeling wel aan gaat ook als het buiten koud genoeg is voor passieve koeling
+    # Wait for some time to let the simulation run
+    time.sleep(2)
+
+    assert not gui.room.isHeaterActive()
+    assert gui.room.isCoolerActive()
+    assert not gui.room.isSunscreenActive()
+
+    gui.setPollInterval(2.0) # Set a new poll rate to on_next test will be more accurate
     # Update plots with new temperature and humidity values
     gui.updatePlots(22, 40)
     assert gui.temperatureValues[-1] == 22
