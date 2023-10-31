@@ -1,4 +1,5 @@
 PyQt5
 reactivex
 matplotlib
+pytest
 .\python_example\

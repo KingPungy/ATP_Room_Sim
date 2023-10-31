@@ -15,9 +15,13 @@ This project is a simulation of a room temperature control system. The room is s
 - Allows the user to set:
     - Target temperature
     - Target threshold
+    - Lux threshold
+    - Outside Lux
     - Outside temperature
     - Inside temperature
-    - Sensor polling rate
+    - Sensor polling Interval
+    - Active Temperature Control
+    - Heater and cooler strength
 
 Example of the PyQt5 UI:  
 ![UI](Img/ExampleUI.png)
@@ -34,7 +38,7 @@ Example of the PyQt5 UI:
     ```
 
 ### Python Code Requirements
-Install the required Python packages by running the following command:
+Install the required Python packages by running the following command. This also contains the pybind11 module:
 ```bash
 pip install -r requirements.txt
 ```
@@ -59,8 +63,18 @@ Optional command line arguments:
 2. Run one of the `test_*.py` files.
    The rest will be done automatically.
 
-Total number of tests: 40  
-Latest results: `40 passed, 0 skipped, 0 failed in 9.71 seconds`
+Total number of tests: 107  
+Latest results: `107 passed, 0 skipped, 0 failed in 18.77 seconds`
+
+---
+## Links
+
+Used Resources: 
+- PyQT5: https://www.riverbankcomputing.com/static/Docs/PyQt5/  
+- pybind11: https://pybind11.readthedocs.io/en/stable/index.html  
+- ReactiveX: http://reactivex.io/  
+- Pytest: https://docs.pytest.org/en/stable/
+
 
 ---
 
