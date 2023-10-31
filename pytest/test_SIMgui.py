@@ -254,11 +254,7 @@ def test_update_observer(gui):
     assert gui.observablePoll != previous_poll
 
 
-#TODO: add an assert for some error being handled
-# - the user tries to set the poll interval to 0 check
-# - the sensor is not connected
-# - the arduino is not connected
-# - the user tries to set the lux threshold to 0
+
 def test_simulation_gui_system_test(gui):
     
     # Initialize the SIMgui class
