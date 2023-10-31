@@ -119,13 +119,23 @@ if __name__ == '__main__':
         for name, func in inspect.getmembers(SIMgui, inspect.isfunction):
             setattr(SIMgui, name, verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(func)))
 
+        # Wrap functions within the MockFirmata class
+        for name, func in inspect.getmembers(MockFirmata, inspect.isfunction):
+            setattr(MockFirmata, name, verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(func)))
+        
         # Create wrapper functions and apply decorators for the Room class functions
         for attr_name, attr_value in inspect.getmembers(rs.Room):
             if callable(attr_value) and not inspect.isclass(attr_value) and attr_name != "__getattribute__":
                 wrapper_func = verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(attr_value))
                 setattr(rs.Room, attr_name, wrapper_func)
 
-    # setup and 
+        # Create wrapper functions and apply decorators for the MockArduino class functions
+        for attr_name, attr_value in inspect.getmembers(rs.mockArduino):
+            if callable(attr_value) and not inspect.isclass(attr_value) and attr_name != "__getattribute__":
+                wrapper_func = verbose_output_logger_decorator(verbose_enabled, output_logging_enabled)(log_time_enabled_decorator(log_time_enabled)(attr_value))
+                setattr(rs.mockArduino, attr_name, wrapper_func)
+        
+    # setup the main program
     main()
 
     pass
